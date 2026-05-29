@@ -1082,7 +1082,7 @@ function pvReels(b,th){
   const cards=(b.items||[]).map(i=>{
     const src=i.thumbData||i.thumbUrl||null;
     return`<a class="pv-reel-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border}">
-      <div class="pv-reel-thumb" style="background:${th.iconBg}">
+      <div class="pv-reel-thumb" style="background:${th.iconBg};position:relative">
         ${src?`<img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`:''}
         <span style="${src?'display:none;':''}font-size:36px">${esc(i.emoji||'🎬')}</span>
         <div class="pv-reel-play"><div class="pv-reel-play-btn">▶</div></div>
@@ -1121,8 +1121,8 @@ function pvYoutube(b,th){
   const cards=(b.items||[]).map(i=>{
     const auto=ytThumb(i.url);const src=i.thumbData||i.thumbUrl||auto||null;
     return`<a class="pv-yt-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}">
-      <div class="pv-yt-thumb" style="background:${th.iconBg}">
-        ${src?`<img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">`:''}
+      <div class="pv-yt-thumb" style="background:${th.iconBg};position:relative">
+        ${src?`<img src="${esc(src)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`:''}
         <span style="${src?'display:none;':''}font-size:34px">${esc(i.emoji||'📹')}</span>
         <div class="pv-yt-play"><div class="pv-yt-play-btn">▶</div></div>
       </div>
@@ -1130,8 +1130,10 @@ function pvYoutube(b,th){
         <div style="font-size:9.5px;font-weight:700;color:#cc0000;margin-bottom:3px">▶ YouTube</div>
         <div style="font-size:12.5px;font-weight:700;color:${th.text};line-height:1.35">${esc(i.title||'')}</div>
         ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
-      </div></a>`;}).join('');
-  return`<div class="pv-sec"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div></div><div class="pv-yt-row">${cards}</div><div style="height:20px"></div>`;
+      </div>
+    </a>`;}).join('');
+  return`<div class="pv-sec" style="padding-bottom:0"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+  <div class="pv-yt-row">${cards}</div></div><div style="height:20px"></div>`;
 }
 function pvBottom(b,th){
   const links=(b.items||[]).map(i=>`<a class="pv-bot-link" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><span style="font-size:20px">${esc(i.icon||'🔗')}</span><span>${esc(i.label||'')}</span></a>`).join('');
