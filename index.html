@@ -243,7 +243,11 @@ function buildReels(b,th){
         ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
       </div>
     </a>`;}).join('');
-  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div></div>${fH}<div class="reels-row">${cards}</div><div style="height:20px"></div>`;
+  return`<div class="sec a">
+    <div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div>
+    ${fH}
+    <div class="reels-row" style="margin:0 -20px;padding:0 20px 10px">${cards}</div>
+  </div>`;
 }
 
 function buildUpcoming(b,th){
@@ -327,7 +331,10 @@ function buildYoutube(b,th){
         ${i.sub?`<div class="yt-sub" style="color:${th.muted}">${esc(i.sub)}</div>`:''}
       </div>
     </a>`;}).join('');
-  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div></div><div class="yt-row">${cards}</div><div style="height:20px"></div>`;
+  return`<div class="sec a">
+    <div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div>
+    <div class="yt-row" style="margin:0 -20px;padding:0 20px 10px">${cards}</div>
+  </div>`;
 }
 
 function buildBottom(b,th){

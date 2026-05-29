@@ -1092,9 +1092,11 @@ function pvReels(b,th){
         <div style="font-size:12px;font-weight:700;color:${th.text};line-height:1.35">${esc(i.title||'')}</div>
         ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
       </div></a>`;}).join('');
-  return`<div class="pv-sec"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div></div>
-  ${filtersHTML}
-  <div class="pv-reels-row">${cards}</div><div style="height:20px"></div>`;
+  return`<div class="pv-sec">
+    <div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+    ${filtersHTML}
+    <div class="pv-reels-row" style="margin:0 -20px;padding:0 20px 10px">${cards}</div>
+  </div>`;
 }
 function pvUpcoming(b,th){
   const items=(b.items||[]).map(i=>`<div class="pv-upcoming-item" style="background:${th.card};border:1px solid ${th.border}"><span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span><span class="pv-upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span></div>`).join('');
@@ -1132,8 +1134,10 @@ function pvYoutube(b,th){
         ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
       </div>
     </a>`;}).join('');
-  return`<div class="pv-sec" style="padding-bottom:0"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
-  <div class="pv-yt-row">${cards}</div></div><div style="height:20px"></div>`;
+  return`<div class="pv-sec">
+    <div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+    <div class="pv-yt-row" style="margin:0 -20px;padding:0 20px 10px">${cards}</div>
+  </div>`;
 }
 function pvBottom(b,th){
   const links=(b.items||[]).map(i=>`<a class="pv-bot-link" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><span style="font-size:20px">${esc(i.icon||'🔗')}</span><span>${esc(i.label||'')}</span></a>`).join('');
