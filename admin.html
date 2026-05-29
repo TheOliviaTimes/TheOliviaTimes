@@ -408,14 +408,26 @@ async function publish(){
   document.getElementById('pubIcon').textContent='⏳';
   document.getElementById('pubText').textContent='發布中...';
   try{
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/pages`,{
-      method:'POST',
-      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:PAGE_ID,data:S})
+    // 先嘗試 PATCH 更新（資料已存在）
+    let res=await fetch(`${SUPABASE_URL}/rest/v1/pages?id=eq.${PAGE_ID}`,{
+      method:'PATCH',
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({data:S, updated_at: new Date().toISOString()})
     });
-    if(res.ok||res.status===200||res.status===201){
+    // 如果 PATCH 失敗（沒有該筆資料），改用 POST 新增
+    if(!res.ok){
+      res=await fetch(`${SUPABASE_URL}/rest/v1/pages`,{
+        method:'POST',
+        headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({id:PAGE_ID, data:S})
+      });
+    }
+    if(res.ok||res.status===200||res.status===201||res.status===204){
       toast('🎉 發布成功！網站已更新');setDirty(false);
-    } else {throw new Error(await res.text());}
+    } else {
+      const err=await res.text();
+      throw new Error(err);
+    }
   }catch(e){toast('❌ 發布失敗：'+e.message,true);console.error(e);}
   btn.disabled=false;
   document.getElementById('pubIcon').textContent='🚀';
