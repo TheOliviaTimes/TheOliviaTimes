@@ -422,7 +422,23 @@ async function publish(){
   document.getElementById('pubIcon').textContent='⏳';
   document.getElementById('pubText').textContent='發布中...';
   try{
-    // 清除 URL 結尾斜線
+    // 深度複製 S，移除所有 base64（只保留 URL）
+    const clean=JSON.parse(JSON.stringify(S));
+    // 清除大頭照 base64（若已上傳到 Storage 則保留 URL）
+    if(clean.avatar&&clean.avatar.startsWith('data:')){
+      toast('⚠️ 大頭照請先上傳到 Storage，不能直接用本機圖片',true);
+      btn.disabled=false;
+      document.getElementById('pubIcon').textContent='🚀';
+      document.getElementById('pubText').textContent='發布到網站';
+      return;
+    }
+    // 清除所有區塊內的 base64 圖片
+    (clean.blocks||[]).forEach(b=>{
+      (b.items||[]).forEach(item=>{
+        if(item.thumbData&&item.thumbData.startsWith('data:'))item.thumbData=null;
+        if(item.imgData&&item.imgData.startsWith('data:'))item.imgData=null;
+      });
+    });
     const baseUrl=SUPABASE_URL.replace(/\/+$/,'');
     const res=await fetch(`${baseUrl}/rest/v1/pages`,{
       method:'POST',
@@ -432,7 +448,7 @@ async function publish(){
         'Content-Type':'application/json',
         'Prefer':'resolution=merge-duplicates,return=minimal'
       },
-      body:JSON.stringify({id:PAGE_ID, data:S, updated_at:new Date().toISOString()})
+      body:JSON.stringify({id:PAGE_ID, data:clean, updated_at:new Date().toISOString()})
     });
     if(res.ok||res.status===200||res.status===201||res.status===204){
       toast('🎉 發布成功！網站已更新');setDirty(false);
