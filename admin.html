@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>後台管理 · The Olivia Times</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script>
+  const SUPABASE_URL = 'https://pwzyliquskdhfpjeqgof.supabase.co/rest/v1/';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3enlsaXF1c2tkaGZwamVxZ29mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMjQ5NjIsImV4cCI6MjA5NTYwMDk2Mn0.-QMK60Y0rXWnDTYJftYhE50JjA5xKpn7mEndu0vs1j0';
+  const ADMIN_PASSWORD = 'Arash7050@databa$e';
+  const PAGE_ID = 'main';
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Noto Sans TC',sans-serif;background:#ede7df;color:#2a1f1a}
+button,input,textarea,select{font-family:inherit}button{cursor:pointer}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:#fdf9f5;display:flex;align-items:center;justify-content:center;z-index:200}
+.login-box{background:#fff;border:1px solid #e0d4c8;border-radius:20px;padding:36px 32px;text-align:center;box-shadow:0 4px 24px rgba(80,40,20,.1);width:300px}
+.login-box h2{font-family:'Noto Serif TC',serif;font-size:20px;font-weight:600;margin-bottom:6px}
+.login-box p{font-size:12px;color:#a09080;margin-bottom:20px}
+.login-box input{width:100%;padding:10px 12px;border:1px solid #e0d4c8;border-radius:10px;font-size:14px;outline:none;margin-bottom:12px;background:#fdf9f5}
+.login-box input:focus{border-color:#b06050}
+.login-box button{width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#c07060,#e09888);color:#fff;font-size:14px;font-weight:700}
+.login-err{font-size:12px;color:#c04040;min-height:16px;margin-bottom:8px}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#2a1f1a;color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;transition:transform .3s,opacity .3s;opacity:0;z-index:999;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.err{background:#c04040}
+
+/* APP */
+.app{display:flex;height:100vh}
+
+/* EDITOR */
+.editor{width:360px;flex-shrink:0;background:#fff;border-right:1px solid #e0d4c8;display:flex;flex-direction:column;overflow:hidden}
+.ed-top{padding:13px 18px 10px;background:#fdf9f5;border-bottom:1px solid #e8ddd2;flex-shrink:0}
+.ed-top h1{font-size:13px;font-weight:700;color:#b06050}
+.ed-top p{font-size:11px;color:#a09080;margin-top:2px}
+.ed-tabs{display:flex;border-bottom:1px solid #e8ddd2;background:#fdf9f5;flex-shrink:0}
+.etab{flex:1;padding:9px 4px;font-size:11px;font-weight:700;text-align:center;border:none;background:none;color:#a09080;border-bottom:2px solid transparent;transition:.15s}
+.etab.on{color:#b06050;border-bottom-color:#b06050}
+.ed-body{flex:1;overflow-y:auto;padding:14px 16px}
+.ed-body::-webkit-scrollbar{width:4px}
+.ed-body::-webkit-scrollbar-thumb{background:#ddd0c4;border-radius:4px}
+.epanel{display:none}.epanel.on{display:block}
+
+/* fields */
+.ef{margin-bottom:11px}
+.ef label{display:block;font-size:11px;font-weight:700;color:#8a6a58;margin-bottom:4px;letter-spacing:.3px}
+.ef input,.ef textarea,.ef select{width:100%;padding:7px 10px;border:1px solid #e0d4c8;border-radius:8px;font-size:12.5px;color:#2a1f1a;background:#fdf9f5;outline:none;transition:border-color .15s;resize:vertical}
+.ef input:focus,.ef textarea:focus,.ef select:focus{border-color:#b06050}
+.ef textarea{min-height:56px;line-height:1.6}
+.ef-row{display:flex;gap:8px}.ef-row .ef{flex:1;margin-bottom:0}
+.esep{font-size:10px;font-weight:700;color:#a09080;letter-spacing:1px;text-transform:uppercase;margin:14px 0 9px;display:flex;align-items:center;gap:8px}
+.esep::after{content:'';flex:1;height:1px;background:#e8ddd2}
+
+/* avatar */
+.av-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.av-circle{width:56px;height:56px;border-radius:50%;border:2px dashed #d0c0b0;background:#f8f2ea;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;cursor:pointer;position:relative}
+.av-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.av-ov{position:absolute;inset:0;background:rgba(0,0,0,.28);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:0;transition:.15s}
+.av-circle:hover .av-ov{opacity:1}
+.av-info p{font-size:11px;color:#a09080;line-height:1.6}
+.av-btn{display:inline-block;margin-top:4px;background:#fdecea;color:#b06050;font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;border:1px solid #f0c0b0;cursor:pointer}
+
+/* thumb widget */
+.thumb-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.thumb-prev{width:44px;height:44px;border-radius:8px;border:1.5px dashed #d0c0b0;background:#f8f2ea;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;cursor:pointer;position:relative}
+.thumb-prev img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.thumb-info{flex:1}
+.thumb-info .tlbl{font-size:10.5px;font-weight:700;color:#8a6a58;display:block;margin-bottom:4px}
+.thumb-info input{width:100%;padding:6px 9px;border:1px solid #e0d4c8;border-radius:7px;font-size:12px;color:#2a1f1a;background:#fdf9f5;outline:none}
+.thumb-info input:focus{border-color:#b06050}
+.thumb-up-btn{display:inline-block;margin-top:4px;background:#fdecea;color:#b06050;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:16px;border:1px solid #f0c0b0;cursor:pointer}
+
+/* ── DRAG & DROP ── */
+/* block list */
+.bk-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.bk{background:#fdf9f5;border:1px solid #e8ddd2;border-radius:10px;overflow:hidden;transition:box-shadow .15s,opacity .15s}
+.bk.dragging{opacity:.4;box-shadow:0 8px 24px rgba(80,40,20,.18)}
+.bk.drag-over{box-shadow:0 0 0 2px #b06050}
+.bk-head{display:flex;align-items:center;gap:8px;padding:8px 11px;cursor:pointer;user-select:none}
+.bk-drag-handle{color:#d0c0b0;font-size:16px;cursor:grab;padding:0 2px;flex-shrink:0;touch-action:none}
+.bk-drag-handle:active{cursor:grabbing}
+.bk-name{flex:1;font-size:12.5px;font-weight:700;color:#2a1f1a}
+.bk-type{font-size:10px;color:#a09080;background:#e8ddd2;padding:2px 7px;border-radius:10px}
+.bk-del{background:none;border:none;color:#c0a090;font-size:16px;padding:0;line-height:1;transition:.15s}
+.bk-del:hover{color:#c03030}
+.bk-arr{font-size:10px;color:#b0a090;transition:transform .2s;flex-shrink:0}
+.bk.open .bk-arr{transform:rotate(180deg)}
+.bk-body{display:none;padding:0 11px 11px;border-top:1px solid #e8ddd2}
+.bk.open .bk-body{display:block}
+
+/* item list */
+.bi-list{display:flex;flex-direction:column;gap:5px;margin:9px 0 7px}
+.bi{background:#fff;border:1px solid #e8ddd2;border-radius:8px;overflow:hidden;transition:box-shadow .15s,opacity .15s}
+.bi.dragging{opacity:.4;box-shadow:0 4px 16px rgba(80,40,20,.15)}
+.bi.drag-over{box-shadow:0 0 0 2px #b06050}
+.bi-head{display:flex;align-items:center;gap:7px;padding:7px 9px;cursor:pointer;user-select:none}
+.bi-drag-handle{color:#d0c0b0;font-size:14px;cursor:grab;flex-shrink:0;touch-action:none}
+.bi-drag-handle:active{cursor:grabbing}
+.bi-lbl{flex:1;font-size:12px;color:#2a1f1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bi-del{background:none;border:none;color:#c0a090;font-size:14px;padding:0;line-height:1}
+.bi-del:hover{color:#c03030}
+.bi-arr{font-size:9px;color:#b0a090;transition:transform .2s;flex-shrink:0}
+.bi.open .bi-arr{transform:rotate(180deg)}
+.bi-body{display:none;padding:0 9px 9px;border-top:1px solid #e8ddd2}
+.bi.open .bi-body{display:block}
+.bi-body .ef{margin-top:8px;margin-bottom:0}
+
+.add-btn{width:100%;padding:7px;border-radius:8px;border:1.5px dashed #d8ccc0;background:none;color:#a09080;font-size:12px;font-weight:700;transition:.15s}
+.add-btn:hover{background:#fdecea;color:#b06050;border-color:#e0b0a0}
+.align-btn{flex:1;padding:6px 4px;border-radius:8px;border:1px solid #e0d4c8;background:#fdf9f5;color:#8a6a58;font-size:11px;font-weight:700;transition:.15s;text-align:center}
+.align-btn:hover{border-color:#b06050;color:#b06050}
+.align-btn.on{background:#b06050;color:#fff;border-color:#b06050}
+.add-bk-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.add-bk-btn{padding:9px 6px;border-radius:9px;border:1.5px dashed #d8ccc0;background:none;color:#6a5040;font-size:11.5px;font-weight:700;transition:.15s;text-align:center}
+.add-bk-btn:hover{background:#fdf9f5;border-color:#c0a890}
+.sw{flex:1;min-width:calc(50% - 4px);padding:8px 6px;border-radius:8px;font-size:11px;font-weight:700;color:#5a4030;text-align:center;border:2px solid transparent;cursor:pointer;transition:.15s}
+.sw.on{border-color:#2a1f1a}.sw:hover{border-color:#c0a890}
+
+/* footer */
+.ed-foot{padding:12px 16px;border-top:1px solid #e8ddd2;background:#fdf9f5;flex-shrink:0;display:flex;gap:8px}
+.pub-btn{flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#c07060,#e09888);color:#fff;font-size:13px;font-weight:700;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.pub-btn:hover{opacity:.9;transform:translateY(-1px)}
+.pub-btn:disabled{opacity:.6;transform:none;cursor:not-allowed}
+.logout-btn{padding:10px 14px;border-radius:10px;border:1px solid #e0d4c8;background:none;color:#a09080;font-size:12px;font-weight:700}
+.logout-btn:hover{background:#fdecea;color:#b06050}
+
+/* PREVIEW */
+.pv-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;background:#ddd5cb}
+.pv-bar{display:flex;align-items:center;gap:7px;padding:10px 16px;background:#d4ccc3;border-bottom:1px solid #ccc4ba;flex-shrink:0}
+.pv-dot{width:9px;height:9px;border-radius:50%}
+.pv-bar span{font-size:11px;color:#9a8878;font-weight:600;margin-left:4px}
+.pub-status{margin-left:auto;font-size:11px;font-weight:700;color:#5e8c6a;background:#e8f0e9;padding:3px 10px;border-radius:20px}
+.pub-status.unsaved{color:#b06050;background:#fdecea}
+.pv-scroll{flex:1;overflow-y:auto;display:flex;justify-content:center;padding:24px 16px 50px}
+.pv-scroll::-webkit-scrollbar{width:5px}
+.pv-scroll::-webkit-scrollbar-thumb{background:#c0b8b0;border-radius:4px}
+.phone{width:430px;flex-shrink:0;background:#fdf9f5;border-radius:44px;box-shadow:0 20px 70px rgba(50,30,20,.2),0 4px 14px rgba(50,30,20,.1);overflow:hidden;border:5px solid #ddd2c8;min-height:700px}
+.phone-pill{height:26px;background:inherit;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px}
+.phone-pill-inner{width:72px;height:7px;background:#d0c8c0;border-radius:20px}
+.pv-page{padding:0 0 56px;font-family:'Noto Sans TC',sans-serif}
+
+/* preview styles */
+.pv-profile{text-align:center;padding:28px 22px 18px}
+.pv-av{width:90px;height:90px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px}
+.pv-av img{width:100%;height:100%;object-fit:cover}
+.pv-name{font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;line-height:1.2;margin-bottom:3px}
+.pv-socials{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pv-soc{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:30px;text-decoration:none;font-size:11.5px;font-weight:500;box-shadow:0 1px 8px rgba(80,40,20,.07)}
+.pv-div{text-align:center;font-size:15px;letter-spacing:10px;margin:18px 0 22px}
+.pv-sec{padding:0 20px;margin-bottom:26px}
+.pv-sec-title{font-family:'Noto Serif TC',serif;font-size:17px;font-weight:600;margin-bottom:13px}
+.pv-reels-row{display:flex;gap:12px;overflow-x:auto;padding:0 20px 10px;scrollbar-width:none}
+.pv-reels-row::-webkit-scrollbar{display:none}
+.pv-reel-card{flex-shrink:0;width:148px;border-radius:16px;overflow:hidden;text-decoration:none;display:flex;flex-direction:column;box-shadow:0 2px 14px rgba(80,40,20,.09)}
+.pv-reel-thumb{width:100%;aspect-ratio:9/16;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden;position:relative;flex-shrink:0}
+.pv-reel-thumb img{width:100%;height:100%;object-fit:cover}
+.pv-reel-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.18)}
+.pv-reel-play-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.88);display:flex;align-items:center;justify-content:center;font-size:14px;padding-left:3px}
+.pv-upcoming{display:flex;flex-direction:column;gap:9px}
+.pv-upcoming-item{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;box-shadow:0 1px 8px rgba(80,40,20,.07)}
+.pv-upcoming-cd{font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-left:10px}
+.pv-prod-1{display:flex;flex-direction:column;gap:16px}
+.pv-prod-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pv-prod-4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pv-prod-single{border-radius:18px;overflow:hidden;box-shadow:0 2px 16px rgba(80,40,20,.09)}
+.pv-prod-grid{border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(80,40,20,.08)}
+.pv-links{display:flex;flex-direction:column;gap:9px}
+.pv-link-card{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:15px;text-decoration:none;box-shadow:0 1px 8px rgba(80,40,20,.07)}
+.pv-link-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.pv-yt-row{display:flex;gap:12px;overflow-x:auto;padding:0 20px 10px;scrollbar-width:none}
+.pv-yt-row::-webkit-scrollbar{display:none}
+.pv-yt-card{flex-shrink:0;width:220px;border-radius:14px;overflow:hidden;text-decoration:none;display:block;box-shadow:0 2px 14px rgba(80,40,20,.09)}
+.pv-yt-thumb{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;position:relative}
+.pv-yt-thumb img{width:100%;height:100%;object-fit:cover}
+.pv-yt-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2)}
+.pv-yt-play-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,0,0,.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;padding-left:3px}
+.pv-bot-links{display:flex;flex-direction:column;gap:9px;padding:0 20px;margin-bottom:22px}
+.pv-bot-link{display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:15px;text-decoration:none;font-size:13px;font-weight:600;box-shadow:0 1px 8px rgba(80,40,20,.07)}
+.pv-footer{text-align:center;font-size:11px;padding:4px 0;line-height:1.8}
+
+#avatarInput,#thumbFileInput{display:none}
+</style>
+</head>
+<body>
+<input type="file" id="avatarInput" accept="image/*">
+<input type="file" id="thumbFileInput" accept="image/*">
+
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>🌸 後台登入</h2>
+    <p>The Olivia Times 管理後台</p>
+    <input type="password" id="pwInput" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="login-err" id="loginErr"></div>
+    <button onclick="doLogin()">登入</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="app" id="appShell" style="display:none">
+<div class="editor">
+  <div class="ed-top">
+    <h1>🌸 The Olivia Times 後台</h1>
+    <p>拖曳 ⠿ 可調整順序 · 按「發布」更新網站</p>
+  </div>
+  <div class="ed-tabs">
+    <button class="etab on" data-tab="profile">個人</button>
+    <button class="etab" data-tab="blocks">區塊</button>
+    <button class="etab" data-tab="style">樣式</button>
+  </div>
+  <div class="ed-body">
+
+    <div class="epanel on" id="tab-profile">
+      <div class="esep">大頭照</div>
+      <div class="av-row">
+        <div class="av-circle" id="avCircle"><span id="avEmoji">🙂</span><div class="av-ov">📷</div></div>
+        <div class="av-info"><p>支援 JPG/PNG<br>建議正方形</p><label class="av-btn" for="avatarInput">選擇圖片</label></div>
+      </div>
+      <div class="esep">基本資訊</div>
+      <div class="ef"><label>名稱</label><input id="f-name" value="Olivia Wu 歐莉"></div>
+      <div class="ef"><label>副標題</label><input id="f-sub" value="The Olivia Times"></div>
+      <div class="ef"><label>簡介（文字卡片，可換行）</label>
+        <textarea id="f-bio">🇹🇼 × 🇮🇱 台以混血 氣球伊伊 👶
+親子日常 · 童模 · 團購合作
+✉️ 合作邀約請寄信</textarea>
+      </div>
+      <div class="ef"><label>簡介文字對齊</label>
+        <div style="display:flex;gap:6px;margin-top:2px">
+          <button class="align-btn on" data-align="left">☰ 置左</button>
+          <button class="align-btn" data-align="center">≡ 置中</button>
+          <button class="align-btn" data-align="right">☰ 置右</button>
+        </div>
+      </div>
+      <div class="esep">社群連結</div>
+      <div class="ef"><label>Instagram</label><input id="f-ig" value="https://www.instagram.com/theoliviatimes/"></div>
+      <div class="ef-row">
+        <div class="ef"><label>YouTube</label><input id="f-yt" placeholder="https://youtube.com/@..."></div>
+        <div class="ef"><label>Facebook</label><input id="f-fb" placeholder="https://..."></div>
+      </div>
+      <div class="ef-row">
+        <div class="ef"><label>LINE</label><input id="f-line" placeholder="https://lin.ee/..."></div>
+        <div class="ef"><label>網站</label><input id="f-web" placeholder="https://..."></div>
+      </div>
+      <div class="ef"><label>Email</label><input id="f-email" placeholder="your@email.com"></div>
+      <div class="esep">頁腳</div>
+      <div class="ef"><label>頁腳文字</label><input id="f-footer" value="Made with 💛 for family moments"></div>
+    </div>
+
+    <div class="epanel" id="tab-blocks">
+      <div class="esep">頁面區塊（拖曳 ⠿ 排序）</div>
+      <div class="bk-list" id="bkList"></div>
+      <div style="margin-top:12px;font-size:10px;font-weight:700;color:#a09080;letter-spacing:.8px;margin-bottom:7px">＋ 新增區塊</div>
+      <div class="add-bk-grid">
+        <button class="add-bk-btn" data-type="reels">🎬 Reels</button>
+        <button class="add-bk-btn" data-type="upcoming">⏳ 即將開團</button>
+        <button class="add-bk-btn" data-type="products">🛍️ 商品</button>
+        <button class="add-bk-btn" data-type="links">🔗 連結</button>
+        <button class="add-bk-btn" data-type="youtube">▶️ YouTube</button>
+        <button class="add-bk-btn" data-type="bottom">📌 底部連結</button>
+      </div>
+    </div>
+
+    <div class="epanel" id="tab-style">
+      <div class="esep">主題色</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <div class="sw on" data-th="warm" style="background:linear-gradient(135deg,#fdf9f5,#f0e4d8)">暖米</div>
+        <div class="sw" data-th="rose"  style="background:linear-gradient(135deg,#fdedf0,#f8d0d8)">玫瑰</div>
+        <div class="sw" data-th="sage"  style="background:linear-gradient(135deg,#edf5ee,#c8deca)">鼠尾草</div>
+        <div class="sw" data-th="peach" style="background:linear-gradient(135deg,#fdf0e6,#f8d4b0)">蜜桃</div>
+      </div>
+      <div class="esep" style="margin-top:18px">分隔符號</div>
+      <div class="ef">
+        <select id="f-div">
+          <option value="✿">✿</option>
+          <option value="✦ ✦ ✦">✦ ✦ ✦</option>
+          <option value="· · ·">· · ·</option>
+          <option value="— — —">— — —</option>
+          <option value="❀ ❀ ❀">❀ ❀ ❀</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="ed-foot">
+    <button class="pub-btn" id="pubBtn" onclick="publish()">
+      <span id="pubIcon">🚀</span><span id="pubText">發布到網站</span>
+    </button>
+    <button class="logout-btn" onclick="logout()">登出</button>
+  </div>
+</div>
+
+<div class="pv-wrap">
+  <div class="pv-bar">
+    <div class="pv-dot" style="background:#f97b7b"></div>
+    <div class="pv-dot" style="background:#f7ca5a"></div>
+    <div class="pv-dot" style="background:#7bcf7b"></div>
+    <span>即時預覽</span>
+    <span class="pub-status unsaved" id="pubStatus">未發布</span>
+  </div>
+  <div class="pv-scroll">
+    <div class="phone" id="phoneEl">
+      <div class="phone-pill"><div class="phone-pill-inner"></div></div>
+      <div class="pv-page" id="pvContent"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ══ LOGIN ══ */
+function doLogin(){
+  const pw=document.getElementById('pwInput').value;
+  if(pw===ADMIN_PASSWORD){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('appShell').style.display='flex';
+    loadFromSupabase();
+  } else {
+    document.getElementById('loginErr').textContent='密碼錯誤，請再試一次';
+    document.getElementById('pwInput').value='';
+  }
+}
+function logout(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('pwInput').value='';
+  document.getElementById('loginErr').textContent='';
+}
+
+/* ══ TOAST ══ */
+function toast(msg,isErr=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show'+(isErr?' err':'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',2800);
+}
+
+/* ══ THEMES ══ */
+const TH={
+  warm:{bg:'#fdf9f5',card:'#fff',border:'#e0d4c8',text:'#2a1f1a',sub:'#6a5040',muted:'#a09080',accent:'#b06050',accentBg:'#fdecea',iconBg:'#f0e8e0',divColor:'#d8ccc0'},
+  rose:{bg:'#fdf0f3',card:'#fff',border:'#f0d0d8',text:'#2a1020',sub:'#7a4050',muted:'#b08090',accent:'#c04060',accentBg:'#fdeaee',iconBg:'#fce0e8',divColor:'#f0b0c0'},
+  sage:{bg:'#f2f7f2',card:'#fff',border:'#ccdece',text:'#1a2a1e',sub:'#406050',muted:'#7a9880',accent:'#3d7a50',accentBg:'#e4f0e6',iconBg:'#d8eed8',divColor:'#a8d0b0'},
+  peach:{bg:'#fdf5ee',card:'#fff',border:'#eed8c0',text:'#2a1a0e',sub:'#7a5030',muted:'#a08060',accent:'#c07030',accentBg:'#fdecd8',iconBg:'#fde0c0',divColor:'#f0c090'},
+};
+
+/* ══ STATE ══ */
+const S={
+  avatar:null,name:'Olivia Wu 歐莉',sub:'The Olivia Times',
+  bio:'🇹🇼 × 🇮🇱 台以混血 氣球伊伊 👶\n親子日常 · 童模 · 團購合作\n✉️ 合作邀約請寄信',
+  bioAlign:'left',ig:'https://www.instagram.com/theoliviatimes/',
+  yt:'',fb:'',line:'',web:'',email:'',
+  footer:'Made with 💛 for family moments',divider:'✿',theme:'warm',
+  blocks:[
+    {id:1,type:'reels',title:'親子Reels',items:[
+      {emoji:'🎈',title:'氣球伊伊の玩耍日常',sub:'感官·童趣',tag:'',thumbUrl:'',thumbData:null,url:''},
+    ]},
+    {id:2,type:'products',title:'開團好物',layout:'1',items:[
+      {emoji:'❄️',name:'新商品',desc:'',url:'',btnText:'前往購買',featured:false,status:'open',countdown:'',imgUrl:'',imgData:null},
+    ]},
+    {id:3,type:'bottom',title:'底部連結',items:[
+      {icon:'🌐',label:'The Olivia Times 官網',url:'#'},
+      {icon:'💬',label:'加入 LINE 社群',url:'#'},
+    ]}
+  ]
+};
+let nextId=30;
+
+/* ══ DIRTY STATE ══ */
+function setDirty(v){
+  const st=document.getElementById('pubStatus');
+  if(st){st.textContent=v?'有未發布的變更':'已發布';st.className='pub-status'+(v?' unsaved':'');}
+}
+
+/* ══ HELPERS ══ */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function ytId(url){const m=String(url||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/|v\/))([A-Za-z0-9_-]{11})/);return m?m[1]:null;}
+function ytThumb(url){const id=ytId(url);return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:null;}
+
+/* ══ DEBOUNCE ══ */
+let _rt=null;
+function dRender(ms=280){clearTimeout(_rt);_rt=setTimeout(render,ms);}
+
+/* ══ SUPABASE ══ */
+async function loadFromSupabase(){
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/pages?id=eq.${PAGE_ID}&select=data`,{
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY}
+    });
+    const json=await res.json();
+    if(json&&json.length&&json[0].data){
+      Object.assign(S,json[0].data);
+      syncEditor();
+      toast('✅ 已載入現有資料');
+    }
+  }catch(e){console.error(e);}
+  rebuildBkList();render();setDirty(false);
+}
+
+async function publish(){
+  const btn=document.getElementById('pubBtn');
+  btn.disabled=true;
+  document.getElementById('pubIcon').textContent='⏳';
+  document.getElementById('pubText').textContent='發布中...';
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/pages`,{
+      method:'POST',
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:PAGE_ID,data:S})
+    });
+    if(res.ok||res.status===200||res.status===201){
+      toast('🎉 發布成功！網站已更新');setDirty(false);
+    } else {throw new Error(await res.text());}
+  }catch(e){toast('❌ 發布失敗：'+e.message,true);console.error(e);}
+  btn.disabled=false;
+  document.getElementById('pubIcon').textContent='🚀';
+  document.getElementById('pubText').textContent='發布到網站';
+}
+
+function syncEditor(){
+  ['name','sub','bio','ig','yt','fb','line','web','email','footer'].forEach(k=>{
+    const el=document.getElementById('f-'+k);if(el)el.value=S[k]||'';
+  });
+  const dv=document.getElementById('f-div');if(dv)dv.value=S.divider||'✿';
+  document.querySelectorAll('.align-btn').forEach(b=>b.classList.toggle('on',b.dataset.align===S.bioAlign));
+  document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s.dataset.th===S.theme));
+  if(S.avatar){
+    document.getElementById('avCircle').innerHTML=`<img src="${S.avatar}" alt=""><div class="av-ov">📷</div>`;
+  }
+}
+
+/* ══════════════════════════════════
+   DRAG & DROP — blocks
+══════════════════════════════════ */
+let dragSrcBk=null;
+
+function initBlockDrag(el,bid){
+  const handle=el.querySelector('.bk-drag-handle');
+  handle.addEventListener('mousedown',e=>{
+    e.stopPropagation();
+    dragSrcBk=bid;
+    el.classList.add('dragging');
+    document.addEventListener('mousemove',onBkMove);
+    document.addEventListener('mouseup',onBkUp);
+  });
+}
+
+function onBkMove(e){
+  const list=document.getElementById('bkList');
+  const els=[...list.querySelectorAll('.bk:not(.dragging)')];
+  for(const el of els){
+    const r=el.getBoundingClientRect();
+    if(e.clientY<r.top+r.height/2){
+      list.insertBefore(list.querySelector('.bk.dragging'),el);
+      break;
+    } else if(e.clientY<r.bottom){
+      el.after(list.querySelector('.bk.dragging'));
+      break;
+    }
+  }
+}
+
+function onBkUp(){
+  document.removeEventListener('mousemove',onBkMove);
+  document.removeEventListener('mouseup',onBkUp);
+  // sync S.blocks order from DOM
+  const list=document.getElementById('bkList');
+  const newOrder=[...list.querySelectorAll('.bk')].map(el=>parseInt(el.dataset.id));
+  S.blocks.sort((a,b)=>newOrder.indexOf(a.id)-newOrder.indexOf(b.id));
+  list.querySelector('.bk.dragging')?.classList.remove('dragging');
+  dragSrcBk=null;
+  render();setDirty(true);
+}
+
+/* ══════════════════════════════════
+   DRAG & DROP — items inside block
+══════════════════════════════════ */
+let dragSrcItem=null; // {bid, ii}
+
+function initItemDrag(el,bid,ii){
+  const handle=el.querySelector('.bi-drag-handle');
+  if(!handle)return;
+  handle.addEventListener('mousedown',e=>{
+    e.stopPropagation();
+    dragSrcItem={bid,ii};
+    el.classList.add('dragging');
+    document.addEventListener('mousemove',onItemMove);
+    document.addEventListener('mouseup',onItemUp);
+  });
+}
+
+function onItemMove(e){
+  if(!dragSrcItem)return;
+  const list=document.querySelector(`.bi-list[data-bid="${dragSrcItem.bid}"]`);
+  if(!list)return;
+  const els=[...list.querySelectorAll('.bi:not(.dragging)')];
+  for(const el of els){
+    const r=el.getBoundingClientRect();
+    if(e.clientY<r.top+r.height/2){
+      list.insertBefore(list.querySelector('.bi.dragging'),el);break;
+    } else if(e.clientY<r.bottom){
+      el.after(list.querySelector('.bi.dragging'));break;
+    }
+  }
+}
+
+function onItemUp(){
+  document.removeEventListener('mousemove',onItemMove);
+  document.removeEventListener('mouseup',onItemUp);
+  if(!dragSrcItem)return;
+  const {bid}=dragSrcItem;
+  const b=S.blocks.find(b=>b.id===bid);
+  if(b){
+    const list=document.querySelector(`.bi-list[data-bid="${bid}"]`);
+    if(list){
+      const newOrder=[...list.querySelectorAll('.bi')].map(el=>parseInt(el.dataset.ii));
+      // remap: newOrder[i] = old index → reorder b.items accordingly
+      const oldItems=[...b.items];
+      b.items=newOrder.map(oi=>oldItems[oi]);
+      // update data-ii on DOM elements
+      list.querySelectorAll('.bi').forEach((el,idx)=>el.dataset.ii=idx);
+    }
+  }
+  list?.querySelector?.('.bi.dragging')?.classList.remove('dragging');
+  document.querySelector('.bi.dragging')?.classList.remove('dragging');
+  dragSrcItem=null;
+  render();setDirty(true);
+}
+
+/* ══════════════════════════════════
+   BUILD BLOCK LIST UI
+══════════════════════════════════ */
+function rebuildBkList(){
+  const list=document.getElementById('bkList');
+  list.innerHTML='';
+  S.blocks.forEach((b)=>{
+    const el=document.createElement('div');
+    el.className='bk';el.dataset.id=b.id;
+    el.innerHTML=`
+      <div class="bk-head">
+        <span class="bk-drag-handle" title="拖曳排序">⠿</span>
+        <span class="bk-name">${esc(b.title)}</span>
+        <span class="bk-type">${typeName(b.type)}</span>
+        <button class="bk-del" data-bid="${b.id}">×</button>
+        <span class="bk-arr">▾</span>
+      </div>
+      <div class="bk-body">
+        <div class="ef" style="margin-top:9px"><label>區塊標題</label>
+          <input class="bk-title-inp" data-bid="${b.id}" value="${esc(b.title)}"></div>
+        ${b.type==='products'?`<div class="ef"><label>排列方式</label>
+          <select class="bk-layout" data-bid="${b.id}">
+            <option value="1" ${(b.layout||'1')==='1'?'selected':''}>單一大圖</option>
+            <option value="2" ${b.layout==='2'?'selected':''}>一排兩個</option>
+            <option value="4" ${b.layout==='4'?'selected':''}>一排四個</option>
+          </select></div>`:''}
+        ${buildItemsUI(b)}
+        <button class="add-btn" data-add="${b.id}" style="margin-top:7px">＋ 新增項目</button>
+      </div>`;
+    list.appendChild(el);
+    initBlockDrag(el,b.id);
+  });
+  bindBkEvents();
+}
+
+function typeName(t){return{reels:'Reels',upcoming:'即將開團',products:'商品',links:'連結',youtube:'YouTube',bottom:'底部連結'}[t]||t}
+
+function buildItemsUI(b){
+  if(b.type==='reels')    return bReelsUI(b);
+  if(b.type==='upcoming') return bUpcomingUI(b);
+  if(b.type==='products') return bProductsUI(b);
+  if(b.type==='links')    return bLinksUI(b);
+  if(b.type==='youtube')  return bYoutubeUI(b);
+  if(b.type==='bottom')   return bBottomUI(b);
+  return'';
+}
+
+/* item wrapper with drag handle */
+function biWrap(b,ii,icon,label,body){
+  return`<div class="bi" data-bid="${b.id}" data-ii="${ii}">
+    <div class="bi-head">
+      <span class="bi-drag-handle" title="拖曳排序">⠿</span>
+      <span style="font-size:15px">${icon}</span>
+      <span class="bi-lbl">${label}</span>
+      <button class="bi-del" data-bid="${b.id}" data-ii="${ii}">×</button>
+      <span class="bi-arr">▾</span>
+    </div>
+    <div class="bi-body">${body}</div>
+  </div>`;
+}
+
+/* thumbnail widget */
+function tWidget(b,ii,item,urlCls,dataKey){
+  const src=item[dataKey]||item.thumbUrl||'';
+  const pid=`tp-${b.id}-${ii}`;
+  return`<div class="thumb-row">
+    <div class="thumb-prev" id="${pid}" data-bid="${b.id}" data-ii="${ii}" data-key="${dataKey}">
+      ${src?`<img src="${esc(src)}" alt="">`:item.emoji?`<span style="font-size:18px">${esc(item.emoji)}</span>`:`<span>🖼</span>`}
+      <div class="av-ov">📷</div>
+    </div>
+    <div class="thumb-info">
+      <span class="tlbl">封面圖 URL（或上傳）</span>
+      <input class="${urlCls}" data-bid="${b.id}" data-ii="${ii}" value="${esc(item.thumbUrl||'')}" placeholder="https://...">
+      <label class="thumb-up-btn" data-bid="${b.id}" data-ii="${ii}" data-key="${dataKey}">⬆ 上傳圖片</label>
+    </div>
+  </div>`;
+}
+
+function pWidget(b,ii,item){
+  const src=item.imgData||item.imgUrl||'';
+  const pid=`pp-${b.id}-${ii}`;
+  return`<div class="thumb-row">
+    <div class="thumb-prev" id="${pid}" data-bid="${b.id}" data-ii="${ii}" data-key="imgData">
+      ${src?`<img src="${esc(src)}" alt="">`:item.emoji?`<span style="font-size:18px">${esc(item.emoji)}</span>`:`<span>🖼</span>`}
+      <div class="av-ov">📷</div>
+    </div>
+    <div class="thumb-info">
+      <span class="tlbl">商品圖片 URL（或上傳）</span>
+      <input class="pi pi-img" data-bid="${b.id}" data-ii="${ii}" value="${esc(item.imgUrl||'')}" placeholder="https://...">
+      <label class="thumb-up-btn" data-bid="${b.id}" data-ii="${ii}" data-key="imgData">⬆ 上傳圖片</label>
+    </div>
+  </div>`;
+}
+
+function bReelsUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,i.emoji||'🎬',i.title||'(未命名)',`
+      <div class="ef-row" style="margin-top:8px">
+        <div class="ef" style="flex:0 0 52px"><label>圖示</label><input class="ri ri-emoji" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.emoji||'')}" style="text-align:center" maxlength="4"></div>
+        <div class="ef"><label>標題</label><input class="ri ri-title" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.title||'')}"></div>
+      </div>
+      <div class="ef"><label>副標題</label><input class="ri ri-sub" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.sub||'')}"></div>
+      <div class="ef"><label>分類標籤</label><input class="ri ri-tag" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.tag||'')}" placeholder="例：感官盆"></div>
+      <div class="ef"><label>Reels URL</label><input class="ri ri-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}" placeholder="https://www.instagram.com/reel/..."></div>
+      ${tWidget(b,ii,i,'ri ri-thumb','thumbData')}`
+    )).join('')+`</div>`;
+}
+
+function bUpcomingUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,'⏳',i.name||'(未命名)',`
+      <div class="ef" style="margin-top:8px"><label>名稱</label><input class="ui ui-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
+      <div class="ef"><label>剩餘天數</label><input class="ui ui-days" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.daysLeft||'')}" placeholder="例：9"></div>`
+    )).join('')+`</div>`;
+}
+
+function bProductsUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,i.emoji||'📦',i.name||'(未命名)',`
+      <div class="ef-row" style="margin-top:8px">
+        <div class="ef" style="flex:0 0 52px"><label>圖示</label><input class="pi pi-emoji" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.emoji||'')}" style="text-align:center" maxlength="4"></div>
+        <div class="ef"><label>名稱</label><input class="pi pi-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
+      </div>
+      <div class="ef"><label>說明</label><textarea class="pi pi-desc" data-bid="${b.id}" data-ii="${ii}">${esc(i.desc||'')}</textarea></div>
+      ${pWidget(b,ii,i)}
+      <div class="ef-row">
+        <div class="ef"><label>狀態</label>
+          <select class="pi pi-status" data-bid="${b.id}" data-ii="${ii}">
+            <option value="open" ${i.status==='open'?'selected':''}>現正開團</option>
+            <option value="upcoming" ${i.status==='upcoming'?'selected':''}>即將開團</option>
+            <option value="" ${!i.status?'selected':''}>無</option>
+          </select></div>
+        <div class="ef"><label>倒數文字</label><input class="pi pi-cd" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.countdown||'')}" placeholder="倒數03天"></div>
+      </div>
+      <div class="ef"><label>按鈕文字</label><input class="pi pi-btn" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.btnText||'前往購買')}"></div>
+      <div class="ef"><label>購買 URL</label><input class="pi pi-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}"></div>
+      <div class="ef" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" class="pi pi-feat" data-bid="${b.id}" data-ii="${ii}" id="pf${b.id}-${ii}" ${i.featured?'checked':''}>
+        <label for="pf${b.id}-${ii}" style="margin:0;font-size:12px;font-weight:600;color:#6a5040">✨ 精選</label>
+      </div>`
+    )).join('')+`</div>`;
+}
+
+function bLinksUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,i.icon||'🔗',i.label||'(未命名)',`
+      <div class="ef-row" style="margin-top:8px">
+        <div class="ef" style="flex:0 0 52px"><label>圖示</label><input class="li li-icon" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.icon||'')}" style="text-align:center" maxlength="4"></div>
+        <div class="ef"><label>標題</label><input class="li li-label" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.label||'')}"></div>
+      </div>
+      <div class="ef"><label>副標題</label><input class="li li-sub" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.sub||'')}"></div>
+      <div class="ef"><label>分類標籤</label><input class="li li-tag" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.tag||'')}" placeholder="選填"></div>
+      <div class="ef"><label>URL</label><input class="li li-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}"></div>`
+    )).join('')+`</div>`;
+}
+
+function bYoutubeUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,i.emoji||'📹',i.title||'(未命名)',`
+      <div class="ef-row" style="margin-top:8px">
+        <div class="ef" style="flex:0 0 52px"><label>圖示</label><input class="yi yi-emoji" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.emoji||'📹')}" style="text-align:center" maxlength="4"></div>
+        <div class="ef"><label>標題</label><input class="yi yi-title" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.title||'')}"></div>
+      </div>
+      <div class="ef"><label>副標題</label><input class="yi yi-sub" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.sub||'')}"></div>
+      <div class="ef"><label>YouTube URL（自動縮圖）</label><input class="yi yi-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}" placeholder="https://youtu.be/..."></div>
+      ${tWidget(b,ii,i,'yi yi-thumb','thumbData')}`
+    )).join('')+`</div>`;
+}
+
+function bBottomUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,i.icon||'🔗',i.label||'(未命名)',`
+      <div class="ef-row" style="margin-top:8px">
+        <div class="ef" style="flex:0 0 52px"><label>圖示</label><input class="boi boi-icon" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.icon||'')}" style="text-align:center" maxlength="4"></div>
+        <div class="ef"><label>標題</label><input class="boi boi-label" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.label||'')}"></div>
+      </div>
+      <div class="ef"><label>URL</label><input class="boi boi-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}"></div>`
+    )).join('')+`</div>`;
+}
+
+/* ══ BIND BLOCK EVENTS ══ */
+let pendingBid=null,pendingIi=null,pendingKey=null;
+
+function bindBkEvents(){
+  const list=document.getElementById('bkList');
+
+  /* toggle block open */
+  list.querySelectorAll('.bk-head').forEach(h=>{
+    h.addEventListener('click',e=>{
+      if(e.target.classList.contains('bk-del')||e.target.classList.contains('bk-drag-handle'))return;
+      h.closest('.bk').classList.toggle('open');
+    });
+  });
+  /* toggle item open */
+  list.querySelectorAll('.bi-head').forEach(h=>{
+    h.addEventListener('click',e=>{
+      if(e.target.classList.contains('bi-del')||e.target.classList.contains('bi-drag-handle'))return;
+      h.closest('.bi').classList.toggle('open');
+    });
+  });
+
+  /* init item drag on each bi */
+  list.querySelectorAll('.bi').forEach(el=>{
+    const bid=parseInt(el.dataset.bid);
+    const ii=parseInt(el.dataset.ii);
+    initItemDrag(el,bid,ii);
+  });
+
+  /* delete block */
+  list.querySelectorAll('.bk-del').forEach(btn=>btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    S.blocks=S.blocks.filter(b=>b.id!==parseInt(btn.dataset.bid));
+    rebuildBkList();render();setDirty(true);
+  }));
+  /* delete item */
+  list.querySelectorAll('.bi-del').forEach(btn=>btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const b=S.blocks.find(b=>b.id===parseInt(btn.dataset.bid));
+    if(b){b.items.splice(parseInt(btn.dataset.ii),1);rebuildBkList();render();setDirty(true);}
+  }));
+  /* block title */
+  list.querySelectorAll('.bk-title-inp').forEach(inp=>inp.addEventListener('input',()=>{
+    const b=S.blocks.find(b=>b.id===parseInt(inp.dataset.bid));
+    if(b){b.title=inp.value;inp.closest('.bk').querySelector('.bk-name').textContent=inp.value;dRender();setDirty(true);}
+  }));
+  /* product layout */
+  list.querySelectorAll('.bk-layout').forEach(sel=>sel.addEventListener('change',()=>{
+    const b=S.blocks.find(b=>b.id===parseInt(sel.dataset.bid));
+    if(b){b.layout=sel.value;render();setDirty(true);}
+  }));
+  /* add item */
+  list.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',()=>{
+    const b=S.blocks.find(b=>b.id===parseInt(btn.dataset.add));if(!b)return;
+    const dflt={
+      reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
+      upcoming:{name:'新團購',daysLeft:'7'},
+      products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
+      links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
+      youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
+      bottom:{icon:'🔗',label:'新連結',url:''}
+    };
+    b.items.push({...(dflt[b.type]||{})});
+    rebuildBkList();
+    const bkEl=list.querySelector(`.bk[data-id="${b.id}"]`);
+    if(bkEl){bkEl.classList.add('open');const bis=bkEl.querySelectorAll('.bi');if(bis.length)bis[bis.length-1].classList.add('open');}
+    render();setDirty(true);
+  }));
+
+  /* thumb upload labels */
+  list.querySelectorAll('.thumb-up-btn').forEach(lbl=>lbl.addEventListener('click',()=>{
+    pendingBid=parseInt(lbl.dataset.bid);pendingIi=parseInt(lbl.dataset.ii);pendingKey=lbl.dataset.key;
+    document.getElementById('thumbFileInput').click();
+  }));
+  list.querySelectorAll('.thumb-prev').forEach(prev=>prev.addEventListener('click',()=>{
+    pendingBid=parseInt(prev.dataset.bid);pendingIi=parseInt(prev.dataset.ii);pendingKey=prev.dataset.key;
+    document.getElementById('thumbFileInput').click();
+  }));
+
+  /* all input changes */
+  list.addEventListener('input',e=>{
+    const inp=e.target;
+    const bid=parseInt(inp.dataset.bid),ii=parseInt(inp.dataset.ii);
+    if(isNaN(bid)||isNaN(ii))return;
+    const b=S.blocks.find(b=>b.id===bid);if(!b)return;
+    const item=b.items[ii];if(!item)return;
+    const cl=[...inp.classList];
+    if(cl.includes('ri-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
+    if(cl.includes('ri-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
+    if(cl.includes('ri-sub'))  item.sub=inp.value;
+    if(cl.includes('ri-tag'))  item.tag=inp.value;
+    if(cl.includes('ri-url'))  item.url=inp.value;
+    if(cl.includes('ri-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
+    if(cl.includes('ui-name')){item.name=inp.value;uBH(inp,'⏳',inp.value);}
+    if(cl.includes('ui-days')) item.daysLeft=inp.value;
+    if(cl.includes('pi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.name);}
+    if(cl.includes('pi-name')){item.name=inp.value;uBH(inp,item.emoji,inp.value);}
+    if(cl.includes('pi-desc')) item.desc=inp.value;
+    if(cl.includes('pi-img'))  {item.imgUrl=inp.value;uTP(`pp-${bid}-${ii}`,inp.value||item.imgData);}
+    if(cl.includes('pi-status'))item.status=inp.value;
+    if(cl.includes('pi-cd'))   item.countdown=inp.value;
+    if(cl.includes('pi-btn'))  item.btnText=inp.value;
+    if(cl.includes('pi-url'))  item.url=inp.value;
+    if(cl.includes('li-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
+    if(cl.includes('li-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
+    if(cl.includes('li-sub'))  item.sub=inp.value;
+    if(cl.includes('li-tag'))  item.tag=inp.value;
+    if(cl.includes('li-url'))  item.url=inp.value;
+    if(cl.includes('yi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
+    if(cl.includes('yi-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
+    if(cl.includes('yi-sub'))  item.sub=inp.value;
+    if(cl.includes('yi-url'))  {item.url=inp.value;const yt=ytThumb(inp.value);if(yt&&!item.thumbData&&!item.thumbUrl)uTP(`tp-${bid}-${ii}`,yt);}
+    if(cl.includes('yi-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
+    if(cl.includes('boi-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
+    if(cl.includes('boi-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
+    if(cl.includes('boi-url')) item.url=inp.value;
+    dRender();setDirty(true);
+  });
+  list.querySelectorAll('.pi-feat').forEach(cb=>cb.addEventListener('change',()=>{
+    const b=S.blocks.find(b=>b.id===parseInt(cb.dataset.bid));
+    if(b){b.items[parseInt(cb.dataset.ii)].featured=cb.checked;render();setDirty(true);}
+  }));
+}
+
+function uBH(inp,icon,label){
+  const bi=inp.closest('.bi');if(!bi)return;
+  const s=bi.querySelector('.bi-head span:nth-child(2)');if(s)s.textContent=icon||'';
+  const l=bi.querySelector('.bi-lbl');if(l)l.textContent=label||'(未命名)';
+}
+function uTP(id,src){
+  const el=document.getElementById(id);if(!el||!src)return;
+  el.innerHTML=`<img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:6px"><div class="av-ov">📷</div>`;
+}
+
+/* ══ THUMB UPLOAD ══ */
+document.getElementById('thumbFileInput').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f||pendingBid===null)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const b=S.blocks.find(b=>b.id===pendingBid);if(!b)return;
+    const item=b.items[pendingIi];if(!item)return;
+    item[pendingKey]=ev.target.result;
+    uTP(pendingKey==='imgData'?`pp-${pendingBid}-${pendingIi}`:`tp-${pendingBid}-${pendingIi}`,ev.target.result);
+    render();setDirty(true);
+  };r.readAsDataURL(f);e.target.value='';
+});
+
+/* ══ ADD BLOCK ══ */
+document.querySelectorAll('.add-bk-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  const type=btn.dataset.type;
+  const titles={reels:'Reels 影片',upcoming:'即將開團',products:'開團好物',links:'精選連結',youtube:'YouTube 影片',bottom:'底部連結'};
+  const dflt={
+    reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
+    upcoming:{name:'新團購',daysLeft:'7'},
+    products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
+    links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
+    youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
+    bottom:{icon:'🔗',label:'新連結',url:''}
+  };
+  const nb={id:nextId++,type,title:titles[type]||'新區塊',items:[{...(dflt[type]||{})}],layout:'1'};
+  S.blocks.push(nb);
+  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.epanel').forEach(p=>p.classList.remove('on'));
+  document.querySelector('.etab[data-tab="blocks"]').classList.add('on');
+  document.getElementById('tab-blocks').classList.add('on');
+  rebuildBkList();
+  const el=document.querySelector(`.bk[data-id="${nb.id}"]`);if(el)el.classList.add('open');
+  render();setDirty(true);
+}));
+
+/* ══ PROFILE INPUTS ══ */
+['name','sub','bio','ig','yt','fb','line','web','email','footer'].forEach(k=>{
+  const el=document.getElementById('f-'+k);
+  if(el)el.addEventListener('input',()=>{S[k]=el.value;dRender();setDirty(true);});
+});
+document.getElementById('f-div').addEventListener('change',e=>{S.divider=e.target.value;render();setDirty(true);});
+document.querySelectorAll('.align-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');S.bioAlign=btn.dataset.align;render();setDirty(true);
+}));
+document.querySelectorAll('.etab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.etab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.epanel').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on');document.getElementById('tab-'+t.dataset.tab).classList.add('on');
+}));
+document.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{
+  document.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));
+  sw.classList.add('on');S.theme=sw.dataset.th;render();setDirty(true);
+}));
+document.getElementById('avCircle').addEventListener('click',()=>document.getElementById('avatarInput').click());
+document.getElementById('avatarInput').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{S.avatar=ev.target.result;document.getElementById('avCircle').innerHTML=`<img src="${S.avatar}" alt=""><div class="av-ov">📷</div>`;render();setDirty(true);};
+  r.readAsDataURL(f);
+});
+
+/* ══ RENDER PREVIEW ══ */
+function render(){
+  const th=TH[S.theme];
+  document.getElementById('phoneEl').style.background=th.bg;
+  document.getElementById('phoneEl').style.borderColor=th.border;
+  const avHTML=S.avatar?`<img src="${S.avatar}" alt="">`:`<span style="font-size:30px">🙂</span>`;
+  const socs=[];
+  if(S.ig)   socs.push({i:'📸',l:'Instagram',u:S.ig});
+  if(S.yt)   socs.push({i:'▶️',l:'YouTube',u:S.yt});
+  if(S.fb)   socs.push({i:'📘',l:'Facebook',u:S.fb});
+  if(S.line) socs.push({i:'💬',l:'LINE',u:S.line});
+  if(S.web)  socs.push({i:'🌐',l:'網站',u:S.web});
+  if(S.email)socs.push({i:'✉️',l:'Email',u:'mailto:'+S.email});
+  const socsHTML=socs.map(s=>`<a class="pv-soc" href="${esc(s.u)}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.sub}">${s.i} ${s.l}</a>`).join('');
+  let bHTML='';
+  S.blocks.forEach(b=>{
+    if(b.type==='reels')    bHTML+=pvReels(b,th);
+    if(b.type==='upcoming') bHTML+=pvUpcoming(b,th);
+    if(b.type==='products') bHTML+=pvProducts(b,th);
+    if(b.type==='links')    bHTML+=pvLinks(b,th);
+    if(b.type==='youtube')  bHTML+=pvYoutube(b,th);
+    if(b.type==='bottom')   bHTML+=pvBottom(b,th);
+  });
+  document.getElementById('pvContent').innerHTML=`
+    <div class="pv-profile">
+      <div class="pv-av" style="border:3px solid ${th.bg};box-shadow:0 0 0 2.5px ${th.border},0 4px 18px rgba(80,40,20,.1);background:${th.iconBg}">${avHTML}</div>
+      <div class="pv-name" style="color:${th.text}">${esc(S.name)}</div>
+      ${S.sub?`<div style="font-size:12px;color:${th.muted};letter-spacing:1px;font-weight:600;margin-bottom:12px">${esc(S.sub)}</div>`:''}
+      ${S.bio?`<div style="margin:0 2px 14px;padding:13px 15px;border-radius:16px;border:1px solid ${th.border};background:${th.card};box-shadow:0 1px 8px rgba(80,40,20,.07);text-align:${S.bioAlign}"><p style="font-size:12px;color:${th.sub};line-height:1.9;white-space:pre-line">${esc(S.bio)}</p></div>`:''}
+      ${socsHTML?`<div class="pv-socials">${socsHTML}</div>`:''}
+    </div>
+    <div class="pv-div" style="color:${th.divColor}">${esc(S.divider)}</div>
+    ${bHTML}
+    <div class="pv-footer" style="color:${th.muted}">© 2026 ${esc(S.name)}<br>${esc(S.footer)}</div>`;
+}
+
+function pvReels(b,th){
+  const cards=(b.items||[]).map(i=>{
+    const src=i.thumbData||i.thumbUrl||null;
+    return`<a class="pv-reel-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border}">
+      <div class="pv-reel-thumb" style="background:${th.iconBg}">
+        ${src?`<img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover">`:''}
+        <span style="${src?'display:none':''}font-size:36px">${esc(i.emoji||'🎬')}</span>
+        <div class="pv-reel-play"><div class="pv-reel-play-btn">▶</div></div>
+      </div>
+      <div style="padding:9px 10px 11px">
+        <div style="font-size:9.5px;font-weight:700;color:${th.muted};margin-bottom:3px">📸 Reels</div>
+        <div style="font-size:12px;font-weight:700;color:${th.text};line-height:1.35">${esc(i.title||'')}</div>
+        ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
+      </div></a>`;}).join('');
+  return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div></div><div class="pv-reels-row">${cards}</div><div style="height:20px"></div>`;
+}
+function pvUpcoming(b,th){
+  const items=(b.items||[]).map(i=>`<div class="pv-upcoming-item" style="background:${th.card};border:1px solid ${th.border}"><span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span><span class="pv-upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span></div>`).join('');
+  return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div><div class="pv-upcoming">${items}</div></div>`;
+}
+function pvProducts(b,th){
+  const layout=b.layout||'1';const isGrid=layout!=='1';
+  const wc=`pv-prod-${layout}`;
+  const cards=(b.items||[]).map(i=>{
+    const src=i.imgData||i.imgUrl||null;
+    const aspect=isGrid?'1/1':'4/3';const fs=isGrid?'32px':'52px';
+    const imgH=src?`<div style="width:100%;aspect-ratio:${aspect};overflow:hidden"><img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`:`<div style="width:100%;aspect-ratio:${aspect};background:${th.iconBg};display:flex;align-items:center;justify-content:center;font-size:${fs}">${esc(i.emoji||'📦')}</div>`;
+    const stL=i.status==='open'?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;background:#e8f5e9;color:#2e7d32">現正開團中</span>`:i.status==='upcoming'?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;background:${th.accentBg};color:${th.accent}">即將開團</span>`:'';
+    if(!isGrid)return`<div class="pv-prod-single" style="background:${th.card};border:1px solid ${th.border}">${imgH}<div style="padding:13px 15px 15px"><div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap">${stL}${i.featured?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;background:#fff8e0;color:#9a7000">✨ 精選</span>`:''}</div>${i.countdown?`<div style="font-size:11px;font-weight:700;color:${th.accent};margin-bottom:4px">⏱ ${esc(i.countdown)}</div>`:''}<div style="font-family:'Noto Serif TC',serif;font-size:16px;font-weight:600;color:${th.text};margin-bottom:4px;line-height:1.3">${esc(i.name||'')}</div><div style="font-size:11.5px;color:${th.sub};line-height:1.65;margin-bottom:11px">${esc(i.desc||'')}</div><a href="${esc(i.url||'#')}" target="_blank" style="display:inline-block;padding:9px 20px;border-radius:30px;background:${th.text};color:#fff;font-size:12.5px;font-weight:700;text-decoration:none">${esc(i.btnText||'前往購買')}</a></div></div>`;
+    return`<div class="pv-prod-grid" style="background:${th.card};border:1px solid ${th.border}">${imgH}<div style="padding:9px 10px 11px"><div style="display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap">${stL}${i.featured?`<span style="font-size:9.5px;padding:2px 6px;border-radius:10px;background:#fff8e0;color:#9a7000">✨</span>`:''}</div>${i.countdown?`<div style="font-size:10px;font-weight:700;color:${th.accent};margin-bottom:3px">⏱ ${esc(i.countdown)}</div>`:''}<div style="font-size:12px;font-weight:700;color:${th.text};margin-bottom:3px;line-height:1.3">${esc(i.name||'')}</div><div style="font-size:10.5px;color:${th.sub};line-height:1.5;margin-bottom:8px">${esc(i.desc||'')}</div><a href="${esc(i.url||'#')}" target="_blank" style="display:inline-block;padding:6px 12px;border-radius:20px;background:${th.text};color:#fff;font-size:11px;font-weight:700;text-decoration:none">${esc(i.btnText||'購買')}</a></div></div>`;
+  }).join('');
+  return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div><div class="${wc}">${cards}</div></div>`;
+}
+function pvLinks(b,th){
+  const links=(b.items||[]).map(i=>`<a class="pv-link-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><div class="pv-link-icon" style="background:${th.iconBg}">${esc(i.icon||'🔗')}</div><div style="flex:1;min-width:0"><span style="font-size:13.5px;font-weight:700;display:block;color:${th.text}">${esc(i.label||'')}</span>${i.sub?`<span style="font-size:11px;color:${th.muted};display:block;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.sub)}</span>`:''}</div><span style="font-size:17px;color:${th.muted}">›</span></a>`).join('');
+  return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div><div class="pv-links">${links}</div></div>`;
+}
+function pvYoutube(b,th){
+  const cards=(b.items||[]).map(i=>{
+    const auto=ytThumb(i.url);const src=i.thumbData||i.thumbUrl||auto||null;
+    return`<a class="pv-yt-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}">
+      <div class="pv-yt-thumb" style="background:${th.iconBg}">
+        ${src?`<img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover">`:''}
+        <span style="${src?'display:none':''}font-size:34px">${esc(i.emoji||'📹')}</span>
+        <div class="pv-yt-play"><div class="pv-yt-play-btn">▶</div></div>
+      </div>
+      <div style="padding:10px 11px 12px">
+        <div style="font-size:9.5px;font-weight:700;color:#cc0000;margin-bottom:3px">▶ YouTube</div>
+        <div style="font-size:12.5px;font-weight:700;color:${th.text};line-height:1.35">${esc(i.title||'')}</div>
+        ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
+      </div></a>`;}).join('');
+  return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div></div><div class="pv-yt-row">${cards}</div><div style="height:20px"></div>`;
+}
+function pvBottom(b,th){
+  const links=(b.items||[]).map(i=>`<a class="pv-bot-link" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><span style="font-size:20px">${esc(i.icon||'🔗')}</span><span>${esc(i.label||'')}</span></a>`).join('');
+  return`<div class="pv-bot-links">${links}</div>`;
+}
+</script>
+</body>
+</html>

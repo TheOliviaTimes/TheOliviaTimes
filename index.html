@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Olivia Times</title>
+<meta name="description" content="Olivia Wu 歐莉 | 親子日常 · 童模 · 團購合作">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- ★ 填入你的 Supabase 設定 ★ -->
+<script>
+  const SUPABASE_URL = 'https://pwzyliquskdhfpjeqgof.supabase.co/rest/v1/';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3enlsaXF1c2tkaGZwamVxZ29mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMjQ5NjIsImV4cCI6MjA5NTYwMDk2Mn0.-QMK60Y0rXWnDTYJftYhE50JjA5xKpn7mEndu0vs1j0';
+  const PAGE_ID = 'main'; // 你的頁面 ID，不需要改
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans TC',sans-serif;min-height:100vh;color:#2a1f1a}
+
+/* ── 讀取中 ── */
+#loading{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:#fdf9f5;z-index:100;gap:14px
+}
+.spin{width:36px;height:36px;border:3px solid #e0d4c8;border-top-color:#b06050;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{font-size:13px;color:#a09080}
+
+/* ── 頁面 ── */
+.page{max-width:540px;margin:0 auto;padding:0 0 60px;opacity:0;transition:opacity .4s}
+.page.show{opacity:1}
+
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.a{animation:up .6s ease both}
+
+/* profile */
+.profile{text-align:center;padding:32px 22px 18px}
+.av{width:90px;height:90px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px}
+.av img{width:100%;height:100%;object-fit:cover}
+.pname{font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;line-height:1.2;margin-bottom:3px}
+.psub{font-size:12px;letter-spacing:1px;font-weight:600;margin-bottom:12px}
+.bio-card{margin:0 2px 14px;padding:13px 15px;border-radius:16px;box-shadow:0 1px 8px rgba(80,40,20,.07)}
+.bio-card p{font-size:12px;line-height:1.9;white-space:pre-line}
+.socials{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.soc{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:30px;text-decoration:none;font-size:11.5px;font-weight:500;box-shadow:0 1px 8px rgba(80,40,20,.07);transition:.15s}
+.soc:hover{transform:translateY(-1px)}
+
+/* divider */
+.divider{text-align:center;font-size:15px;letter-spacing:10px;margin:18px 0 22px}
+
+/* section */
+.sec{padding:0 20px;margin-bottom:26px}
+.sec-title{font-family:'Noto Serif TC',serif;font-size:17px;font-weight:600;margin-bottom:13px}
+
+/* filter tabs */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
+.ftab{padding:5px 14px;border-radius:20px;font-size:11.5px;font-weight:500;cursor:pointer;user-select:none;transition:.15s;border:1px solid transparent}
+
+/* reels row */
+.reels-row{display:flex;gap:12px;overflow-x:auto;padding:0 20px 10px;scrollbar-width:none}
+.reels-row::-webkit-scrollbar{display:none}
+.reel-card{flex-shrink:0;width:148px;border-radius:16px;overflow:hidden;text-decoration:none;display:flex;flex-direction:column;transition:.15s;box-shadow:0 2px 14px rgba(80,40,20,.09)}
+.reel-card:hover{transform:translateY(-2px)}
+.reel-thumb{width:100%;aspect-ratio:9/16;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden;position:relative;flex-shrink:0}
+.reel-thumb img{width:100%;height:100%;object-fit:cover}
+.reel-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.18)}
+.reel-play-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.88);display:flex;align-items:center;justify-content:center;font-size:14px;padding-left:3px}
+.reel-info{padding:9px 10px 11px}
+.reel-badge{font-size:9.5px;font-weight:700;margin-bottom:3px}
+.reel-title{font-size:12px;font-weight:700;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* upcoming */
+.upcoming-list{display:flex;flex-direction:column;gap:9px}
+.upcoming-item{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;box-shadow:0 1px 8px rgba(80,40,20,.07)}
+.upcoming-cd{font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-left:10px}
+
+/* products */
+.products-1{display:flex;flex-direction:column;gap:16px}
+.products-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.products-4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prod-single{border-radius:18px;overflow:hidden;box-shadow:0 2px 16px rgba(80,40,20,.09)}
+.prod-grid{border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(80,40,20,.08)}
+.prod-img-wrap{overflow:hidden}
+.prod-img-wrap img,.prod-img-wrap .prod-emoji{width:100%;display:block}
+.prod-img-wrap img{object-fit:cover}
+.prod-img-wrap .prod-emoji{display:flex;align-items:center;justify-content:center}
+.prod-body-lg{padding:13px 15px 15px}
+.prod-body-sm{padding:9px 10px 11px}
+.prod-badges{display:flex;gap:5px;align-items:center;margin-bottom:5px;flex-wrap:wrap}
+.badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px}
+.badge-open{background:#e8f5e9;color:#2e7d32}
+.badge-feat{background:#fff8e0;color:#9a7000}
+.prod-cd{font-size:11px;font-weight:700;margin-bottom:4px}
+.prod-name-lg{font-family:'Noto Serif TC',serif;font-size:16px;font-weight:600;margin-bottom:4px;line-height:1.3}
+.prod-name-sm{font-size:12px;font-weight:700;margin-bottom:3px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod-desc-lg{font-size:11.5px;line-height:1.65;margin-bottom:11px}
+.prod-desc-sm{font-size:10.5px;line-height:1.5;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod-btn-lg{display:inline-block;padding:9px 20px;border-radius:30px;color:#fff;font-size:12.5px;font-weight:700;text-decoration:none}
+.prod-btn-sm{display:inline-block;padding:6px 12px;border-radius:20px;color:#fff;font-size:11px;font-weight:700;text-decoration:none}
+
+/* links */
+.links-list{display:flex;flex-direction:column;gap:9px}
+.link-card{display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:15px;text-decoration:none;box-shadow:0 1px 8px rgba(80,40,20,.07);transition:.15s}
+.link-card:hover{transform:translateY(-1px)}
+.link-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.link-lbl{font-size:13.5px;font-weight:700;display:block}
+.link-sub{font-size:11px;display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.link-arr{font-size:17px;margin-left:auto;flex-shrink:0}
+
+/* youtube */
+.yt-row{display:flex;gap:12px;overflow-x:auto;padding:0 20px 10px;scrollbar-width:none}
+.yt-row::-webkit-scrollbar{display:none}
+.yt-card{flex-shrink:0;width:220px;border-radius:14px;overflow:hidden;text-decoration:none;display:block;transition:.15s;box-shadow:0 2px 14px rgba(80,40,20,.09)}
+.yt-card:hover{transform:translateY(-2px)}
+.yt-thumb{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;position:relative}
+.yt-thumb img{width:100%;height:100%;object-fit:cover}
+.yt-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2)}
+.yt-play-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,0,0,.85);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;padding-left:3px}
+.yt-info{padding:10px 11px 12px}
+.yt-badge{font-size:9.5px;font-weight:700;color:#cc0000;margin-bottom:3px}
+.yt-title{font-size:12.5px;font-weight:700;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.yt-sub{font-size:10.5px;margin-top:3px}
+
+/* bottom links */
+.bot-links{display:flex;flex-direction:column;gap:9px;padding:0 20px;margin-bottom:22px}
+.bot-link{display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:15px;text-decoration:none;font-size:13px;font-weight:600;box-shadow:0 1px 8px rgba(80,40,20,.07);transition:.15s}
+.bot-link:hover{transform:translateY(-1px)}
+
+.footer{text-align:center;font-size:11px;padding:4px 0;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin"></div>
+  <p>載入中...</p>
+</div>
+
+<div class="page" id="pageWrap">
+  <div id="pageContent"></div>
+</div>
+
+<script>
+/* ══ Supabase fetch ══ */
+async function loadData(){
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/pages?id=eq.${PAGE_ID}&select=data`,{
+      headers:{
+        'apikey':SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+SUPABASE_ANON_KEY
+      }
+    });
+    const json=await res.json();
+    if(!json||!json.length||!json[0].data)throw new Error('no data');
+    return json[0].data;
+  }catch(e){
+    console.error(e);
+    return null;
+  }
+}
+
+/* ══ THEMES ══ */
+const TH={
+  warm:{bg:'#fdf9f5',card:'#fff',border:'#e0d4c8',text:'#2a1f1a',sub:'#6a5040',muted:'#a09080',accent:'#b06050',accentBg:'#fdecea',iconBg:'#f0e8e0',divColor:'#d8ccc0'},
+  rose:{bg:'#fdf0f3',card:'#fff',border:'#f0d0d8',text:'#2a1020',sub:'#7a4050',muted:'#b08090',accent:'#c04060',accentBg:'#fdeaee',iconBg:'#fce0e8',divColor:'#f0b0c0'},
+  sage:{bg:'#f2f7f2',card:'#fff',border:'#ccdece',text:'#1a2a1e',sub:'#406050',muted:'#7a9880',accent:'#3d7a50',accentBg:'#e4f0e6',iconBg:'#d8eed8',divColor:'#a8d0b0'},
+  peach:{bg:'#fdf5ee',card:'#fff',border:'#eed8c0',text:'#2a1a0e',sub:'#7a5030',muted:'#a08060',accent:'#c07030',accentBg:'#fdecd8',iconBg:'#fde0c0',divColor:'#f0c090'},
+};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function ytId(url){const m=String(url||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/|v\/))([A-Za-z0-9_-]{11})/);return m?m[1]:null;}
+function ytThumb(url){const id=ytId(url);return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:null;}
+
+function buildPage(S){
+  const th=TH[S.theme||'warm'];
+  document.body.style.background=th.bg;
+
+  const socs=[];
+  if(S.ig)   socs.push({i:'📸',l:'Instagram',u:S.ig});
+  if(S.yt)   socs.push({i:'▶️',l:'YouTube',u:S.yt});
+  if(S.fb)   socs.push({i:'📘',l:'Facebook',u:S.fb});
+  if(S.line) socs.push({i:'💬',l:'LINE',u:S.line});
+  if(S.web)  socs.push({i:'🌐',l:'網站',u:S.web});
+  if(S.email)socs.push({i:'✉️',l:'Email',u:'mailto:'+S.email});
+
+  const socsHTML=socs.map(s=>`<a class="soc" href="${esc(s.u)}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.sub}">${s.i} ${s.l}</a>`).join('');
+
+  let bHTML='';
+  ;(S.blocks||[]).forEach(b=>{
+    if(b.type==='reels')    bHTML+=buildReels(b,th);
+    if(b.type==='upcoming') bHTML+=buildUpcoming(b,th);
+    if(b.type==='products') bHTML+=buildProducts(b,th);
+    if(b.type==='links')    bHTML+=buildLinks(b,th);
+    if(b.type==='youtube')  bHTML+=buildYoutube(b,th);
+    if(b.type==='bottom')   bHTML+=buildBottom(b,th);
+  });
+
+  return`
+    <div class="profile a">
+      <div class="av" style="border:3px solid ${th.bg};box-shadow:0 0 0 2.5px ${th.border},0 4px 18px rgba(80,40,20,.1);background:${th.iconBg}">
+        ${S.avatar?`<img src="${esc(S.avatar)}" alt="">`:`<span>🙂</span>`}
+      </div>
+      <div class="pname" style="color:${th.text}">${esc(S.name||'')}</div>
+      ${S.sub?`<div class="psub" style="color:${th.muted}">${esc(S.sub)}</div>`:''}
+      ${S.bio?`<div class="bio-card" style="border:1px solid ${th.border};background:${th.card};text-align:${S.bioAlign||'left'}"><p style="color:${th.sub}">${esc(S.bio)}</p></div>`:''}
+      ${socsHTML?`<div class="socials">${socsHTML}</div>`:''}
+    </div>
+    <div class="divider a" style="color:${th.divColor}">${esc(S.divider||'✿')}</div>
+    ${bHTML}
+    <div class="footer a" style="color:${th.muted}">© 2026 ${esc(S.name||'')}<br>${esc(S.footer||'')}</div>`;
+}
+
+function buildReels(b,th){
+  const tags=[...new Set((b.items||[]).map(i=>i.tag||'').filter(t=>t.trim()))];
+  const fH=tags.length?`<div class="filters" style="padding:0 20px">`+
+    `<span class="ftab on" data-g="${b.id}" data-v="all" style="background:${th.text};color:#fff" onclick="doFilter(this)">全部</span>`+
+    tags.map(t=>`<span class="ftab" data-g="${b.id}" data-v="${esc(t)}" style="border-color:${th.border};color:${th.sub};background:${th.card}" onclick="doFilter(this)">${esc(t)}</span>`).join('')+
+    `</div>`:'';
+  const cards=(b.items||[]).map(i=>{
+    const src=i.thumbData||i.thumbUrl||null;
+    const tH=src?`<img src="${esc(src)}" alt="" onerror="this.style.display='none'">`:``;
+    return`<a class="reel-card" href="${esc(i.url||'#')}" target="_blank" data-g="${b.id}" data-tag="${esc(i.tag||'')}" style="background:${th.card};border:1px solid ${th.border}">
+      <div class="reel-thumb" style="background:${th.iconBg}">${tH}<span style="${src?'display:none':''};font-size:36px">${esc(i.emoji||'🎬')}</span>
+        <div class="reel-play"><div class="reel-play-btn">▶</div></div>
+      </div>
+      <div class="reel-info">
+        <div class="reel-badge" style="color:${th.muted}">📸 Reels</div>
+        <div class="reel-title" style="color:${th.text}">${esc(i.title||'')}</div>
+        ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
+      </div>
+    </a>`;}).join('');
+  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div></div>${fH}<div class="reels-row">${cards}</div><div style="height:20px"></div>`;
+}
+
+function buildUpcoming(b,th){
+  const items=(b.items||[]).map(i=>`
+    <div class="upcoming-item" style="background:${th.card};border:1px solid ${th.border}">
+      <span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span>
+      <span class="upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span>
+    </div>`).join('');
+  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div><div class="upcoming-list">${items}</div></div>`;
+}
+
+function buildProducts(b,th){
+  const layout=b.layout||'1';
+  const isGrid=layout!=='1';
+  const wrapCls=layout==='1'?'products-1':layout==='2'?'products-2':'products-4';
+  const cards=(b.items||[]).map(i=>{
+    const src=i.imgData||i.imgUrl||null;
+    const aspect=isGrid?'1/1':'4/3';
+    const fs=isGrid?'32px':'52px';
+    const imgH=src
+      ?`<div class="prod-img-wrap" style="aspect-ratio:${aspect}"><img src="${esc(src)}" alt="" style="height:100%" onerror="this.parentNode.innerHTML='<div class=prod-emoji style=aspect-ratio:${aspect};background:${th.iconBg};font-size:${fs}>${esc(i.emoji||'📦')}</div>'"></div>`
+      :`<div class="prod-img-wrap prod-emoji" style="aspect-ratio:${aspect};background:${th.iconBg};font-size:${fs}">${esc(i.emoji||'📦')}</div>`;
+    const stL=i.status==='open'?`<span class="badge badge-open">現正開團中</span>`:i.status==='upcoming'?`<span class="badge" style="background:${th.accentBg};color:${th.accent}">即將開團</span>`:'';
+    if(!isGrid)return`<div class="prod-single" style="background:${th.card};border:1px solid ${th.border}">
+      ${imgH}
+      <div class="prod-body-lg">
+        <div class="prod-badges">${stL}${i.featured?`<span class="badge badge-feat">✨ 精選</span>`:''}</div>
+        ${i.countdown?`<div class="prod-cd" style="color:${th.accent}">⏱ ${esc(i.countdown)}</div>`:''}
+        <div class="prod-name-lg" style="color:${th.text}">${esc(i.name||'')}</div>
+        <div class="prod-desc-lg" style="color:${th.sub}">${esc(i.desc||'')}</div>
+        <a class="prod-btn-lg" href="${esc(i.url||'#')}" target="_blank" style="background:${th.text}">${esc(i.btnText||'前往購買')}</a>
+      </div>
+    </div>`;
+    return`<div class="prod-grid" style="background:${th.card};border:1px solid ${th.border}">
+      ${imgH}
+      <div class="prod-body-sm">
+        <div class="prod-badges">${stL}${i.featured?`<span class="badge badge-feat">✨</span>`:''}</div>
+        ${i.countdown?`<div class="prod-cd" style="color:${th.accent};font-size:10px">⏱ ${esc(i.countdown)}</div>`:''}
+        <div class="prod-name-sm" style="color:${th.text}">${esc(i.name||'')}</div>
+        <div class="prod-desc-sm" style="color:${th.sub}">${esc(i.desc||'')}</div>
+        <a class="prod-btn-sm" href="${esc(i.url||'#')}" target="_blank" style="background:${th.text}">${esc(i.btnText||'購買')}</a>
+      </div>
+    </div>`;
+  }).join('');
+  return`<div class="sec a">
+    <div class="sec-title" style="color:${th.text}">${esc(b.title)} <span style="font-size:12px;font-weight:400;color:${th.muted}">${(b.items||[]).length} 個商品</span></div>
+    <div class="${wrapCls}">${cards}</div>
+  </div>`;
+}
+
+function buildLinks(b,th){
+  const tags=[...new Set((b.items||[]).map(i=>i.tag||'').filter(t=>t.trim()))];
+  const fH=tags.length?`<div class="filters">`+
+    `<span class="ftab on" data-g="${b.id}" data-v="all" style="background:${th.text};color:#fff" onclick="doFilter(this)">全部</span>`+
+    tags.map(t=>`<span class="ftab" data-g="${b.id}" data-v="${esc(t)}" style="border-color:${th.border};color:${th.sub};background:${th.card}" onclick="doFilter(this)">${esc(t)}</span>`).join('')+
+    `</div>`:'';
+  const links=(b.items||[]).map(i=>`
+    <a class="link-card" href="${esc(i.url||'#')}" target="_blank" data-g="${b.id}" data-tag="${esc(i.tag||'')}" style="background:${th.card};border:1px solid ${th.border};color:${th.text}">
+      <div class="link-icon" style="background:${th.iconBg}">${esc(i.icon||'🔗')}</div>
+      <div style="flex:1;min-width:0">
+        <span class="link-lbl" style="color:${th.text}">${esc(i.label||'')}</span>
+        ${i.sub?`<span class="link-sub" style="color:${th.muted}">${esc(i.sub)}</span>`:''}
+      </div>
+      <span class="link-arr" style="color:${th.muted}">›</span>
+    </a>`).join('');
+  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div>${fH}<div class="links-list">${links}</div></div>`;
+}
+
+function buildYoutube(b,th){
+  const cards=(b.items||[]).map(i=>{
+    const auto=ytThumb(i.url);
+    const src=i.thumbData||i.thumbUrl||auto||null;
+    const tH=src?`<img src="${esc(src)}" alt="" onerror="this.style.display='none'">`:``;
+    return`<a class="yt-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}">
+      <div class="yt-thumb" style="background:${th.iconBg}">${tH}<span style="${src?'display:none':''};font-size:34px">${esc(i.emoji||'📹')}</span>
+        <div class="yt-play"><div class="yt-play-btn">▶</div></div>
+      </div>
+      <div class="yt-info">
+        <div class="yt-badge">▶ YouTube</div>
+        <div class="yt-title" style="color:${th.text}">${esc(i.title||'')}</div>
+        ${i.sub?`<div class="yt-sub" style="color:${th.muted}">${esc(i.sub)}</div>`:''}
+      </div>
+    </a>`;}).join('');
+  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div></div><div class="yt-row">${cards}</div><div style="height:20px"></div>`;
+}
+
+function buildBottom(b,th){
+  const links=(b.items||[]).map(i=>`
+    <a class="bot-link" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}">
+      <span style="font-size:20px">${esc(i.icon||'🔗')}</span><span>${esc(i.label||'')}</span>
+    </a>`).join('');
+  return`<div class="bot-links">${links}</div>`;
+}
+
+function doFilter(el){
+  const g=el.dataset.g;
+  const th=TH[window._theme||'warm'];
+  document.querySelectorAll('.ftab[data-g="'+g+'"]').forEach(t=>{
+    t.classList.remove('on');
+    t.style.background=th.card;t.style.color=th.sub;
+  });
+  el.classList.add('on');el.style.background=th.text;el.style.color='#fff';
+  const v=el.dataset.v;
+  document.querySelectorAll('[data-g="'+g+'"][data-tag]').forEach(c=>{
+    if(c.classList.contains('ftab'))return;
+    c.style.display=(v==='all'||c.dataset.tag===v||c.dataset.tag==='')?'':'none';
+  });
+}
+
+/* ══ INIT ══ */
+(async()=>{
+  const data=await loadData();
+  if(!data){
+    document.getElementById('loading').innerHTML='<p style="color:#b06050;font-size:14px">⚠️ 無法載入資料，請稍後再試</p>';
+    return;
+  }
+  window._theme=data.theme||'warm';
+  document.title=`${data.name||'Link Page'} | ${data.sub||''}`;
+  document.getElementById('pageContent').innerHTML=buildPage(data);
+  document.getElementById('loading').style.display='none';
+  document.getElementById('pageWrap').classList.add('show');
+})();
+</script>
+</body>
+</html>
