@@ -7,7 +7,7 @@
 <meta name="description" content="Olivia Wu 歐莉 | 親子日常 · 童模 · 團購合作">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- ★ 填入你的 Supabase 設定 ★ -->
 <script>
@@ -19,7 +19,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Noto Sans TC',sans-serif;min-height:100vh;color:#2a1f1a}
+body{font-family:'Noto Sans TC','Noto Sans',sans-serif;min-height:100vh;color:#2a1f1a}
 
 /* ── 讀取中 ── */
 #loading{
@@ -42,8 +42,8 @@ body{font-family:'Noto Sans TC',sans-serif;min-height:100vh;color:#2a1f1a}
 .profile{text-align:center;padding:32px 22px 18px}
 .av{width:90px;height:90px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px}
 .av img{width:100%;height:100%;object-fit:cover}
-.pname{font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;line-height:1.2;margin-bottom:3px}
-.psub{font-size:12px;letter-spacing:1px;font-weight:600;margin-bottom:12px}
+.pname{font-family:'Noto Sans TC','Noto Sans',sans-serif;font-size:22px;font-weight:700;line-height:1.2;margin-bottom:3px}
+.psub{font-size:12px;letter-spacing:1px;font-weight:500;margin-bottom:12px}
 .bio-card{margin:0 2px 14px;padding:13px 15px;border-radius:16px;box-shadow:0 1px 8px rgba(80,40,20,.07)}
 .bio-card p{font-size:12px;line-height:1.9;white-space:pre-line}
 .socials{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
@@ -55,7 +55,7 @@ body{font-family:'Noto Sans TC',sans-serif;min-height:100vh;color:#2a1f1a}
 
 /* section */
 .sec{padding:0 20px;margin-bottom:26px}
-.sec-title{font-family:'Noto Serif TC',serif;font-size:17px;font-weight:600;margin-bottom:13px}
+.sec-title{font-family:'Noto Sans TC','Noto Sans',sans-serif;font-size:17px;font-weight:600;margin-bottom:13px}
 
 /* filter tabs */
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
@@ -96,7 +96,7 @@ body{font-family:'Noto Sans TC',sans-serif;min-height:100vh;color:#2a1f1a}
 .badge-open{background:#e8f5e9;color:#2e7d32}
 .badge-feat{background:#fff8e0;color:#9a7000}
 .prod-cd{font-size:11px;font-weight:700;margin-bottom:4px}
-.prod-name-lg{font-family:'Noto Serif TC',serif;font-size:16px;font-weight:600;margin-bottom:4px;line-height:1.3}
+.prod-name-lg{font-family:'Noto Sans TC','Noto Sans',sans-serif;font-size:16px;font-weight:600;margin-bottom:4px;line-height:1.3}
 .prod-name-sm{font-size:12px;font-weight:700;margin-bottom:3px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .prod-desc-lg{font-size:11.5px;line-height:1.65;margin-bottom:11px}
 .prod-desc-sm{font-size:10.5px;line-height:1.5;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -181,14 +181,23 @@ function buildPage(S){
   document.body.style.background=th.bg;
 
   const socs=[];
-  if(S.ig)   socs.push({i:'📸',l:'Instagram',u:S.ig});
-  if(S.yt)   socs.push({i:'▶️',l:'YouTube',u:S.yt});
-  if(S.fb)   socs.push({i:'📘',l:'Facebook',u:S.fb});
-  if(S.line) socs.push({i:'💬',l:'LINE',u:S.line});
-  if(S.web)  socs.push({i:'🌐',l:'網站',u:S.web});
-  if(S.email)socs.push({i:'✉️',l:'Email',u:'mailto:'+S.email});
+  if(S.ig)   socs.push({key:'ig',l:'Instagram',u:S.ig});
+  if(S.yt)   socs.push({key:'yt',l:'YouTube',u:S.yt});
+  if(S.fb)   socs.push({key:'fb',l:'Facebook',u:S.fb});
+  if(S.line) socs.push({key:'line',l:'LINE',u:S.line});
+  if(S.web)  socs.push({key:'web',l:'網站',u:S.web});
+  if(S.email)socs.push({key:'email',l:'Email',u:'mailto:'+S.email});
 
-  const socsHTML=socs.map(s=>`<a class="soc" href="${esc(s.u)}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.sub}">${s.i} ${s.l}</a>`).join('');
+  const socLogos={
+    ig:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="white" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="5" stroke="white" stroke-width="2" fill="none"/><circle cx="17.5" cy="6.5" r="1.3" fill="white"/></svg>`,
+    yt:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 7s-.3-1.8-1.1-2.6c-1-.9-2.2-.9-2.7-.9C14.4 3.4 12 3.4 12 3.4s-2.4 0-5.2.1c-.5 0-1.7 0-2.7.9C3.3 5.2 3 7 3 7S2.7 9.1 2.7 11v1.8c0 1.9.3 4 .3 4s.3 1.8 1.1 2.6c1 .9 2.4.9 3 1C8.9 20.5 12 20.6 12 20.6s2.4 0 5.2-.2c.5 0 1.7-.1 2.7-1 .8-.7 1.1-2.6 1.1-2.6s.3-2.1.3-4V11c0-1.9-.3-4-.3-4z" stroke="white" stroke-width="1.5" fill="none"/><polygon points="10,8.5 10,15.5 16.5,12" fill="white"/></svg>`,
+    fb:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17 3h-3a5 5 0 00-5 5v3H6v4h3v8h4v-8h3l1-4h-4V8a1 1 0 011-1h3z" stroke="white" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>`,
+    line:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 10.9C21 6.6 16.9 3 12 3S3 6.6 3 10.9c0 3.8 3.4 7 8 7.6.3.1.7.2.8.5.1.3.1.7 0 1l-.1.7c0 .3-.2 1 .9.5 1.1-.5 6-3.5 8.2-6 1.4-1.5 2.2-3.3 2.2-5.3z" stroke="white" stroke-width="1.5" fill="none"/><path d="M8.5 12.5h-1v-4h1m0 4v-4m3 4V9.5l2.5 3V9.5M16 9.5h-2m0 0v2m0 0H16" stroke="white" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>`,
+    web:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.5"/><path d="M12 3c-2.5 0-4.5 4-4.5 9s2 9 4.5 9 4.5-4 4.5-9-2-9-4.5-9z" stroke="white" stroke-width="1.5" fill="none"/><path d="M3 12h18" stroke="white" stroke-width="1.5"/></svg>`,
+    email:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="white" stroke-width="1.5" fill="none"/><path d="M2 7l10 7 10-7" stroke="white" stroke-width="1.5" fill="none"/></svg>`,
+  };
+
+  const socsHTML=socs.map(s=>`<a class="soc" href="${esc(s.u)}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.sub}"><span style="width:26px;height:26px;border-radius:8px;background:${th.accent};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${socLogos[s.key]||''}</span> ${s.l}</a>`).join('');
 
   let bHTML='';
   ;(S.blocks||[]).forEach(b=>{

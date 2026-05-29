@@ -6,7 +6,7 @@
 <title>後台管理 · The Olivia Times</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
   const SUPABASE_URL = 'https://pwzyliquskdhfpjeqgof.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3enlsaXF1c2tkaGZwamVxZ29mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMjQ5NjIsImV4cCI6MjA5NTYwMDk2Mn0.-QMK60Y0rXWnDTYJftYhE50JjA5xKpn7mEndu0vs1j0';
@@ -15,13 +15,13 @@
 </script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;font-family:'Noto Sans TC',sans-serif;background:#ede7df;color:#2a1f1a}
+html,body{height:100%;font-family:'Noto Sans TC','Noto Sans',sans-serif;background:#ede7df;color:#2a1f1a}
 button,input,textarea,select{font-family:inherit}button{cursor:pointer}
 
 /* LOGIN */
 #loginScreen{position:fixed;inset:0;background:#fdf9f5;display:flex;align-items:center;justify-content:center;z-index:200}
 .login-box{background:#fff;border:1px solid #e0d4c8;border-radius:20px;padding:36px 32px;text-align:center;box-shadow:0 4px 24px rgba(80,40,20,.1);width:300px}
-.login-box h2{font-family:'Noto Serif TC',serif;font-size:20px;font-weight:600;margin-bottom:6px}
+.login-box h2{font-family:'Noto Sans TC','Noto Sans',sans-serif;font-size:20px;font-weight:600;margin-bottom:6px}
 .login-box p{font-size:12px;color:#a09080;margin-bottom:20px}
 .login-box input{width:100%;padding:10px 12px;border:1px solid #e0d4c8;border-radius:10px;font-size:14px;outline:none;margin-bottom:12px;background:#fdf9f5}
 .login-box input:focus{border-color:#b06050}
@@ -145,18 +145,18 @@ button,input,textarea,select{font-family:inherit}button{cursor:pointer}
 .phone{width:430px;flex-shrink:0;background:#fdf9f5;border-radius:44px;box-shadow:0 20px 70px rgba(50,30,20,.2),0 4px 14px rgba(50,30,20,.1);overflow:hidden;border:5px solid #ddd2c8;min-height:700px}
 .phone-pill{height:26px;background:inherit;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px}
 .phone-pill-inner{width:72px;height:7px;background:#d0c8c0;border-radius:20px}
-.pv-page{padding:0 0 56px;font-family:'Noto Sans TC',sans-serif}
+.pv-page{padding:0 0 56px;font-family:'Noto Sans TC','Noto Sans',sans-serif}
 
 /* preview styles */
 .pv-profile{text-align:center;padding:28px 22px 18px}
 .pv-av{width:90px;height:90px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px}
 .pv-av img{width:100%;height:100%;object-fit:cover}
-.pv-name{font-family:'Noto Serif TC',serif;font-size:22px;font-weight:600;line-height:1.2;margin-bottom:3px}
+.pv-name{font-family:'Noto Sans TC','Noto Sans',sans-serif;font-size:22px;font-weight:600;line-height:1.2;margin-bottom:3px}
 .pv-socials{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .pv-soc{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:30px;text-decoration:none;font-size:11.5px;font-weight:500;box-shadow:0 1px 8px rgba(80,40,20,.07)}
 .pv-div{text-align:center;font-size:15px;letter-spacing:10px;margin:18px 0 22px}
 .pv-sec{padding:0 20px;margin-bottom:26px}
-.pv-sec-title{font-family:'Noto Serif TC',serif;font-size:17px;font-weight:600;margin-bottom:13px}
+.pv-sec-title{font-family:'Noto Sans TC','Noto Sans',sans-serif;font-size:17px;font-weight:600;margin-bottom:13px}
 .pv-reels-row{display:flex;gap:12px;overflow-x:auto;padding:0 20px 10px;scrollbar-width:none}
 .pv-reels-row::-webkit-scrollbar{display:none}
 .pv-reel-card{flex-shrink:0;width:148px;border-radius:16px;overflow:hidden;text-decoration:none;display:flex;flex-direction:column;box-shadow:0 2px 14px rgba(80,40,20,.09)}
@@ -408,20 +408,18 @@ async function publish(){
   document.getElementById('pubIcon').textContent='⏳';
   document.getElementById('pubText').textContent='發布中...';
   try{
-    // 先嘗試 PATCH 更新（資料已存在）
-    let res=await fetch(`${SUPABASE_URL}/rest/v1/pages?id=eq.${PAGE_ID}`,{
-      method:'PATCH',
-      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({data:S, updated_at: new Date().toISOString()})
+    // 清除 URL 結尾斜線
+    const baseUrl=SUPABASE_URL.replace(/\/+$/,'');
+    const res=await fetch(`${baseUrl}/rest/v1/pages`,{
+      method:'POST',
+      headers:{
+        'apikey':SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+SUPABASE_ANON_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'resolution=merge-duplicates,return=minimal'
+      },
+      body:JSON.stringify({id:PAGE_ID, data:S, updated_at:new Date().toISOString()})
     });
-    // 如果 PATCH 失敗（沒有該筆資料），改用 POST 新增
-    if(!res.ok){
-      res=await fetch(`${SUPABASE_URL}/rest/v1/pages`,{
-        method:'POST',
-        headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({id:PAGE_ID, data:S})
-      });
-    }
     if(res.ok||res.status===200||res.status===201||res.status===204){
       toast('🎉 發布成功！網站已更新');setDirty(false);
     } else {
@@ -857,17 +855,35 @@ function uTP(id,src){
   el.innerHTML=`<img src="${src}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:6px"><div class="av-ov">📷</div>`;
 }
 
+/* ══ 圖片自動壓縮 ══ */
+function compressImage(file, maxW=800, quality=0.75){
+  return new Promise(resolve=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.src=url;
+  });
+}
+
 /* ══ THUMB UPLOAD ══ */
-document.getElementById('thumbFileInput').addEventListener('change',e=>{
+document.getElementById('thumbFileInput').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f||pendingBid===null)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const b=S.blocks.find(b=>b.id===pendingBid);if(!b)return;
-    const item=b.items[pendingIi];if(!item)return;
-    item[pendingKey]=ev.target.result;
-    uTP(pendingKey==='imgData'?`pp-${pendingBid}-${pendingIi}`:`tp-${pendingBid}-${pendingIi}`,ev.target.result);
-    render();setDirty(true);
-  };r.readAsDataURL(f);e.target.value='';
+  const compressed=await compressImage(f, 800, 0.75);
+  const b=S.blocks.find(b=>b.id===pendingBid);if(!b)return;
+  const item=b.items[pendingIi];if(!item)return;
+  item[pendingKey]=compressed;
+  uTP(pendingKey==='imgData'?`pp-${pendingBid}-${pendingIi}`:`tp-${pendingBid}-${pendingIi}`,compressed);
+  render();setDirty(true);
+  e.target.value='';
 });
 
 /* ══ ADD BLOCK ══ */
@@ -913,11 +929,12 @@ document.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{
   sw.classList.add('on');S.theme=sw.dataset.th;render();setDirty(true);
 }));
 document.getElementById('avCircle').addEventListener('click',()=>document.getElementById('avatarInput').click());
-document.getElementById('avatarInput').addEventListener('change',e=>{
+document.getElementById('avatarInput').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{S.avatar=ev.target.result;document.getElementById('avCircle').innerHTML=`<img src="${S.avatar}" alt=""><div class="av-ov">📷</div>`;render();setDirty(true);};
-  r.readAsDataURL(f);
+  const compressed=await compressImage(f, 400, 0.80);
+  S.avatar=compressed;
+  document.getElementById('avCircle').innerHTML=`<img src="${compressed}" alt=""><div class="av-ov">📷</div>`;
+  render();setDirty(true);
 });
 
 /* ══ RENDER PREVIEW ══ */
@@ -927,13 +944,23 @@ function render(){
   document.getElementById('phoneEl').style.borderColor=th.border;
   const avHTML=S.avatar?`<img src="${S.avatar}" alt="">`:`<span style="font-size:30px">🙂</span>`;
   const socs=[];
-  if(S.ig)   socs.push({i:'📸',l:'Instagram',u:S.ig});
-  if(S.yt)   socs.push({i:'▶️',l:'YouTube',u:S.yt});
-  if(S.fb)   socs.push({i:'📘',l:'Facebook',u:S.fb});
-  if(S.line) socs.push({i:'💬',l:'LINE',u:S.line});
-  if(S.web)  socs.push({i:'🌐',l:'網站',u:S.web});
-  if(S.email)socs.push({i:'✉️',l:'Email',u:'mailto:'+S.email});
-  const socsHTML=socs.map(s=>`<a class="pv-soc" href="${esc(s.u)}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.sub}">${s.i} ${s.l}</a>`).join('');
+  if(S.ig)   socs.push({key:'ig',l:'Instagram',u:S.ig});
+  if(S.yt)   socs.push({key:'yt',l:'YouTube',u:S.yt});
+  if(S.fb)   socs.push({key:'fb',l:'Facebook',u:S.fb});
+  if(S.line) socs.push({key:'line',l:'LINE',u:S.line});
+  if(S.web)  socs.push({key:'web',l:'網站',u:S.web});
+  if(S.email)socs.push({key:'email',l:'Email',u:'mailto:'+S.email});
+
+  const socLogos={
+    ig:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="white" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="5" stroke="white" stroke-width="2" fill="none"/><circle cx="17.5" cy="6.5" r="1.3" fill="white"/></svg>`,
+    yt:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 7s-.3-1.8-1.1-2.6c-1-.9-2.2-.9-2.7-.9C14.4 3.4 12 3.4 12 3.4s-2.4 0-5.2.1c-.5 0-1.7 0-2.7.9C3.3 5.2 3 7 3 7S2.7 9.1 2.7 11v1.8c0 1.9.3 4 .3 4s.3 1.8 1.1 2.6c1 .9 2.4.9 3 1C8.9 20.5 12 20.6 12 20.6s2.4 0 5.2-.2c.5 0 1.7-.1 2.7-1 .8-.7 1.1-2.6 1.1-2.6s.3-2.1.3-4V11c0-1.9-.3-4-.3-4z" stroke="white" stroke-width="1.5" fill="none"/><polygon points="10,8.5 10,15.5 16.5,12" fill="white"/></svg>`,
+    fb:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17 3h-3a5 5 0 00-5 5v3H6v4h3v8h4v-8h3l1-4h-4V8a1 1 0 011-1h3z" stroke="white" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>`,
+    line:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 10.9C21 6.6 16.9 3 12 3S3 6.6 3 10.9c0 3.8 3.4 7 8 7.6.3.1.7.2.8.5.1.3.1.7 0 1l-.1.7c0 .3-.2 1 .9.5 1.1-.5 6-3.5 8.2-6 1.4-1.5 2.2-3.3 2.2-5.3z" stroke="white" stroke-width="1.5" fill="none"/></svg>`,
+    web:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.5"/><path d="M12 3c-2.5 0-4.5 4-4.5 9s2 9 4.5 9 4.5-4 4.5-9-2-9-4.5-9z" stroke="white" stroke-width="1.5" fill="none"/><path d="M3 12h18" stroke="white" stroke-width="1.5"/></svg>`,
+    email:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="white" stroke-width="1.5" fill="none"/><path d="M2 7l10 7 10-7" stroke="white" stroke-width="1.5" fill="none"/></svg>`,
+  };
+
+  const socsHTML=socs.map(s=>`<a href="${esc(s.u)}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:30px;border:1px solid ${th.border};background:${th.card};text-decoration:none;color:${th.sub};font-size:11.5px;font-weight:500;box-shadow:0 1px 8px rgba(80,40,20,.07)"><span style="width:26px;height:26px;border-radius:8px;background:${th.accent};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${socLogos[s.key]||''}</span> ${s.l}</a>`).join('');
   let bHTML='';
   S.blocks.forEach(b=>{
     if(b.type==='reels')    bHTML+=pvReels(b,th);
@@ -957,6 +984,11 @@ function render(){
 }
 
 function pvReels(b,th){
+  const tags=[...new Set((b.items||[]).map(i=>i.tag||'').filter(t=>t.trim()))];
+  const filtersHTML=tags.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 20px;margin-bottom:13px">
+    <span style="padding:5px 14px;border-radius:20px;background:${th.text};color:#fff;font-size:11.5px;cursor:pointer;border:1px solid ${th.text}">全部</span>
+    ${tags.map(t=>`<span style="padding:5px 14px;border-radius:20px;background:${th.card};color:${th.sub};font-size:11.5px;cursor:pointer;border:1px solid ${th.border}">${esc(t)}</span>`).join('')}
+  </div>`:'';
   const cards=(b.items||[]).map(i=>{
     const src=i.thumbData||i.thumbUrl||null;
     return`<a class="pv-reel-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border}">
@@ -970,7 +1002,9 @@ function pvReels(b,th){
         <div style="font-size:12px;font-weight:700;color:${th.text};line-height:1.35">${esc(i.title||'')}</div>
         ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
       </div></a>`;}).join('');
-  return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div></div><div class="pv-reels-row">${cards}</div><div style="height:20px"></div>`;
+  return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div></div>
+  ${filtersHTML}
+  <div class="pv-reels-row">${cards}</div><div style="height:20px"></div>`;
 }
 function pvUpcoming(b,th){
   const items=(b.items||[]).map(i=>`<div class="pv-upcoming-item" style="background:${th.card};border:1px solid ${th.border}"><span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span><span class="pv-upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span></div>`).join('');
@@ -984,7 +1018,7 @@ function pvProducts(b,th){
     const aspect=isGrid?'1/1':'4/3';const fs=isGrid?'32px':'52px';
     const imgH=src?`<div style="width:100%;aspect-ratio:${aspect};overflow:hidden"><img src="${esc(src)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`:`<div style="width:100%;aspect-ratio:${aspect};background:${th.iconBg};display:flex;align-items:center;justify-content:center;font-size:${fs}">${esc(i.emoji||'📦')}</div>`;
     const stL=i.status==='open'?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;background:#e8f5e9;color:#2e7d32">現正開團中</span>`:i.status==='upcoming'?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;background:${th.accentBg};color:${th.accent}">即將開團</span>`:'';
-    if(!isGrid)return`<div class="pv-prod-single" style="background:${th.card};border:1px solid ${th.border}">${imgH}<div style="padding:13px 15px 15px"><div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap">${stL}${i.featured?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;background:#fff8e0;color:#9a7000">✨ 精選</span>`:''}</div>${i.countdown?`<div style="font-size:11px;font-weight:700;color:${th.accent};margin-bottom:4px">⏱ ${esc(i.countdown)}</div>`:''}<div style="font-family:'Noto Serif TC',serif;font-size:16px;font-weight:600;color:${th.text};margin-bottom:4px;line-height:1.3">${esc(i.name||'')}</div><div style="font-size:11.5px;color:${th.sub};line-height:1.65;margin-bottom:11px">${esc(i.desc||'')}</div><a href="${esc(i.url||'#')}" target="_blank" style="display:inline-block;padding:9px 20px;border-radius:30px;background:${th.text};color:#fff;font-size:12.5px;font-weight:700;text-decoration:none">${esc(i.btnText||'前往購買')}</a></div></div>`;
+    if(!isGrid)return`<div class="pv-prod-single" style="background:${th.card};border:1px solid ${th.border}">${imgH}<div style="padding:13px 15px 15px"><div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap">${stL}${i.featured?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:12px;background:#fff8e0;color:#9a7000">✨ 精選</span>`:''}</div>${i.countdown?`<div style="font-size:11px;font-weight:700;color:${th.accent};margin-bottom:4px">⏱ ${esc(i.countdown)}</div>`:''}<div style="font-family:'Noto Sans TC','Noto Sans',sans-serif;font-size:16px;font-weight:600;color:${th.text};margin-bottom:4px;line-height:1.3">${esc(i.name||'')}</div><div style="font-size:11.5px;color:${th.sub};line-height:1.65;margin-bottom:11px">${esc(i.desc||'')}</div><a href="${esc(i.url||'#')}" target="_blank" style="display:inline-block;padding:9px 20px;border-radius:30px;background:${th.text};color:#fff;font-size:12.5px;font-weight:700;text-decoration:none">${esc(i.btnText||'前往購買')}</a></div></div>`;
     return`<div class="pv-prod-grid" style="background:${th.card};border:1px solid ${th.border}">${imgH}<div style="padding:9px 10px 11px"><div style="display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap">${stL}${i.featured?`<span style="font-size:9.5px;padding:2px 6px;border-radius:10px;background:#fff8e0;color:#9a7000">✨</span>`:''}</div>${i.countdown?`<div style="font-size:10px;font-weight:700;color:${th.accent};margin-bottom:3px">⏱ ${esc(i.countdown)}</div>`:''}<div style="font-size:12px;font-weight:700;color:${th.text};margin-bottom:3px;line-height:1.3">${esc(i.name||'')}</div><div style="font-size:10.5px;color:${th.sub};line-height:1.5;margin-bottom:8px">${esc(i.desc||'')}</div><a href="${esc(i.url||'#')}" target="_blank" style="display:inline-block;padding:6px 12px;border-radius:20px;background:${th.text};color:#fff;font-size:11px;font-weight:700;text-decoration:none">${esc(i.btnText||'購買')}</a></div></div>`;
   }).join('');
   return`<div class="pv-sec"><div class="pv-sec-title" style="color:${th.text}">${esc(b.title)}</div><div class="${wc}">${cards}</div></div>`;
