@@ -216,7 +216,7 @@ function buildPage(S){
       </div>
       <div class="pname" style="color:${th.text}">${esc(S.name||'')}</div>
       ${S.sub?`<div class="psub" style="color:${th.muted}">${esc(S.sub)}</div>`:''}
-      ${S.bio?`<div class="bio-card" style="border:1px solid ${th.border};background:${th.card};text-align:${S.bioAlign||'left'}"><p style="color:${th.sub}">${esc(S.bio)}</p></div>`:''}
+      ${S.bio?`<div class="bio-card" style="border:1px solid ${th.border};background:${th.card};text-align:${S.bioAlign||'left'}"><p style="color:${th.sub};font-size:${{small:'11px',medium:'13px',large:'16px'}[S.bioSize||'medium']};font-weight:${S.bioBold?'700':'400'}">${esc(S.bio)}</p></div>`:''}
       ${socsHTML?`<div class="socials">${socsHTML}</div>`:''}
     </div>
     <div class="divider a" style="color:${th.divColor}">${esc(S.divider||'✿')}</div>
@@ -243,7 +243,7 @@ function buildReels(b,th){
         ${i.sub?`<div style="font-size:10.5px;color:${th.muted};margin-top:3px">${esc(i.sub)}</div>`:''}
       </div>
     </a>`;}).join('');
-  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div></div>${fH}<div class="reels-row">${cards}</div><div style="height:20px"></div>`;
+  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div></div>${fH}<div class="reels-row">${cards}</div><div style="height:20px"></div>`;
 }
 
 function buildUpcoming(b,th){
@@ -252,7 +252,7 @@ function buildUpcoming(b,th){
       <span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span>
       <span class="upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span>
     </div>`).join('');
-  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div><div class="upcoming-list">${items}</div></div>`;
+  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div><div class="upcoming-list">${items}</div></div>`;
 }
 
 function buildProducts(b,th){
@@ -289,7 +289,7 @@ function buildProducts(b,th){
     </div>`;
   }).join('');
   return`<div class="sec a">
-    <div class="sec-title" style="color:${th.text}">${esc(b.title)} <span style="font-size:12px;font-weight:400;color:${th.muted}">${(b.items||[]).length} 個商品</span></div>
+    <div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)} <span style="font-size:12px;font-weight:400;color:${th.muted}">${(b.items||[]).length} 個商品</span></div>
     <div class="${wrapCls}">${cards}</div>
   </div>`;
 }
@@ -309,7 +309,7 @@ function buildLinks(b,th){
       </div>
       <span class="link-arr" style="color:${th.muted}">›</span>
     </a>`).join('');
-  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div>${fH}<div class="links-list">${links}</div></div>`;
+  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div>${fH}<div class="links-list">${links}</div></div>`;
 }
 
 function buildYoutube(b,th){
@@ -327,7 +327,7 @@ function buildYoutube(b,th){
         ${i.sub?`<div class="yt-sub" style="color:${th.muted}">${esc(i.sub)}</div>`:''}
       </div>
     </a>`;}).join('');
-  return`<div class="sec a"><div class="sec-title" style="color:${th.text}">${esc(b.title)}</div></div><div class="yt-row">${cards}</div><div style="height:20px"></div>`;
+  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div></div><div class="yt-row">${cards}</div><div style="height:20px"></div>`;
 }
 
 function buildBottom(b,th){
