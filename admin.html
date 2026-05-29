@@ -806,6 +806,8 @@ function bindBkEvents(){
     const b=S.blocks.find(b=>b.id===bid);if(!b)return;
     btn.classList.toggle('on');b.titleBold=btn.classList.contains('on');render();setDirty(true);
   }));
+  /* block title */
+  list.querySelectorAll('.bk-title-inp').forEach(inp=>inp.addEventListener('input',()=>{
     const b=S.blocks.find(b=>b.id===parseInt(inp.dataset.bid));
     if(b){b.title=inp.value;inp.closest('.bk').querySelector('.bk-name').textContent=inp.value;dRender();setDirty(true);}
   }));
