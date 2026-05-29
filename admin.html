@@ -568,6 +568,10 @@ function onItemUp(){
 /* ══════════════════════════════════
    BUILD BLOCK LIST UI
 ══════════════════════════════════ */
+/* ══ SIZE/BOLD CLASS HELPERS ══ */
+function szCls(b,size){return 'size-btn'+((b.titleSize||'medium')===size?' on':'');}
+function boldCls(b){return 'bold-btn'+(b.titleBold?' on':'');}
+
 function rebuildBkList(){
   const list=document.getElementById('bkList');
   list.innerHTML='';
@@ -587,10 +591,10 @@ function rebuildBkList(){
           <input class="bk-title-inp" data-bid="${b.id}" value="${esc(b.title)}"></div>
         <div class="ef"><label>標題大小 ＆ 粗細</label>
           <div style="display:flex;gap:6px;margin-top:2px">
-            <button class="size-btn${(b.titleSize||'medium')==='small'?' on':''}" data-bk-size="${b.id}" data-size="small">小</button>
-            <button class="size-btn${(b.titleSize||'medium')==='medium'?' on':''}" data-bk-size="${b.id}" data-size="medium">中</button>
-            <button class="size-btn${(b.titleSize||'medium')==='large'?' on':''}" data-bk-size="${b.id}" data-size="large">大</button>
-            <button class="bold-btn${b.titleBold?' on':''}" data-bk-bold="${b.id}" style="margin-left:4px">B 粗體</button>
+            <button class="${szCls(b,'small')}" data-bk-size="${b.id}" data-size="small">小</button>
+            <button class="${szCls(b,'medium')}" data-bk-size="${b.id}" data-size="medium">中</button>
+            <button class="${szCls(b,'large')}" data-bk-size="${b.id}" data-size="large">大</button>
+            <button class="${boldCls(b)}" data-bk-bold="${b.id}" style="margin-left:4px">B 粗體</button>
           </div>
         </div>
         ${b.type==='products'?`<div class="ef"><label>排列方式</label>
@@ -991,13 +995,14 @@ document.querySelectorAll('.add-bk-btn').forEach(btn=>btn.addEventListener('clic
 });
 document.getElementById('f-div').addEventListener('change',e=>{S.divider=e.target.value;render();setDirty(true);});
 /* bio size/bold */
-document.querySelectorAll('.size-btn[data-target="bio"]').forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll('.size-btn[data-target="bio"]').forEach(b=>b.classList.remove('on'));
+document.querySelectorAll(".size-btn[data-target='bio']").forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll(".size-btn[data-target='bio']").forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');S.bioSize=btn.dataset.size;render();setDirty(true);
 }));
 document.getElementById('bio-bold-btn')?.addEventListener('click',function(){
   this.classList.toggle('on');S.bioBold=this.classList.contains('on');render();setDirty(true);
 });
+document.querySelectorAll('.align-btn').forEach(btn=>btn.addEventListener('click',()=>{
   document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');S.bioAlign=btn.dataset.align;render();setDirty(true);
 }));
