@@ -235,7 +235,7 @@ function buildReels(b,th){
     const src=i.thumbData||i.thumbUrl||null;
     const tH=src?`<img src="${esc(src)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:``;
     return`<a class="reel-card" href="${esc(i.url||'#')}" target="_blank" data-g="${b.id}" data-tag="${esc(i.tag||'')}" style="background:${th.card};border:1px solid ${th.border}">
-      <div class="reel-thumb" style="background:${th.iconBg}">${tH}<span style="${src?'display:none;':''}font-size:36px">${esc(i.emoji||'🎬')}</span>
+      <div class="reel-thumb" style="background:${th.iconBg};position:relative">${tH}<span style="${src?'display:none;':''}font-size:36px">${esc(i.emoji||'🎬')}</span>
         <div class="reel-play"><div class="reel-play-btn">▶</div></div>
       </div>
       <div class="reel-info">
@@ -347,7 +347,7 @@ function buildYoutube(b,th){
     const src=i.thumbData||i.thumbUrl||auto||null;
     const tH=src?`<img src="${esc(src)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:``;
     return`<a class="yt-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}">
-      <div class="yt-thumb" style="background:${th.iconBg}">${tH}<span style="${src?'display:none;':''}font-size:34px">${esc(i.emoji||'📹')}</span>
+      <div class="yt-thumb" style="background:${th.iconBg};position:relative">${tH}<span style="${src?'display:none;':''}font-size:34px">${esc(i.emoji||'📹')}</span>
         <div class="yt-play"><div class="yt-play-btn">▶</div></div>
       </div>
       <div class="yt-info">

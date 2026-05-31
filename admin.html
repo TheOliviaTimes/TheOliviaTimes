@@ -801,7 +801,10 @@ function bBottomUI(b){
 let pendingBid=null,pendingIi=null,pendingKey=null;
 
 function bindBkEvents(){
-  const list=document.getElementById('bkList');
+  // Clone to remove all old event listeners before re-binding
+  const oldList=document.getElementById('bkList');
+  const list=oldList.cloneNode(true);
+  oldList.parentNode.replaceChild(list,oldList);
 
   /* toggle block open */
   list.querySelectorAll('.bk-head').forEach(h=>{
