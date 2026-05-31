@@ -205,6 +205,7 @@ function buildPage(S){
     if(b.type==='upcoming') bHTML+=buildUpcoming(b,th);
     if(b.type==='products') bHTML+=buildProducts(b,th);
     if(b.type==='links')    bHTML+=buildLinks(b,th);
+    if(b.type==='discount') bHTML+=buildDiscount(b,th);
     if(b.type==='youtube')  bHTML+=buildYoutube(b,th);
     if(b.type==='bottom')   bHTML+=buildBottom(b,th);
   });
@@ -250,13 +251,37 @@ function buildReels(b,th){
   </div>`;
 }
 
+function calcDays(dateStr){
+  if(!dateStr)return'?';
+  const target=new Date(dateStr);
+  const today=new Date();today.setHours(0,0,0,0);
+  const diff=Math.ceil((target-today)/(1000*60*60*24));
+  return diff>0?diff:0;
+}
+
 function buildUpcoming(b,th){
-  const items=(b.items||[]).map(i=>`
-    <div class="upcoming-item" style="background:${th.card};border:1px solid ${th.border}">
+  const items=(b.items||[]).map(i=>{
+    const days=i.targetDate?calcDays(i.targetDate):(i.daysLeft||'?');
+    return`<div class="upcoming-item" style="background:${th.card};border:1px solid ${th.border}">
       <span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span>
-      <span class="upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span>
-    </div>`).join('');
+      <span class="upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${days} 天</span>
+    </div>`;}).join('');
   return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div><div class="upcoming-list">${items}</div></div>`;
+}
+
+function buildDiscount(b,th){
+  const items=(b.items||[]).map(i=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;border:1px solid ${th.border};background:${th.card};box-shadow:0 1px 8px rgba(80,40,20,.07);margin-bottom:9px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</div>
+        ${i.desc?`<div style="font-size:11px;color:${th.muted};margin-top:2px">${esc(i.desc)}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+        <span onclick="copyCode(this,'${esc(i.code||'')}')" style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent};cursor:pointer" title="點擊複製">${esc(i.code||'CODE')}</span>
+        ${i.url?`<a href="${esc(i.url)}" target="_blank" style="font-size:11px;color:${th.muted};text-decoration:none">→</a>`:''}
+      </div>
+    </div>`).join('');
+  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div>${items}</div>`;
 }
 
 function buildProducts(b,th){
@@ -357,6 +382,13 @@ function doFilter(el){
   document.querySelectorAll('[data-g="'+g+'"][data-tag]').forEach(c=>{
     if(c.classList.contains('ftab'))return;
     c.style.display=(v==='all'||c.dataset.tag===v||c.dataset.tag==='')?'':'none';
+  });
+}
+function copyCode(el,code){
+  navigator.clipboard.writeText(code).then(()=>{
+    const orig=el.textContent;
+    el.textContent='✓ 已複製！';
+    setTimeout(()=>{el.textContent=orig;},1500);
   });
 }
 

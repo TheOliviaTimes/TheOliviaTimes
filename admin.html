@@ -277,6 +277,7 @@ button,input,textarea,select{font-family:inherit}button{cursor:pointer}
         <button class="add-bk-btn" data-type="upcoming">⏳ 即將開團</button>
         <button class="add-bk-btn" data-type="products">🛍️ 商品</button>
         <button class="add-bk-btn" data-type="links">🔗 連結</button>
+        <button class="add-bk-btn" data-type="discount">🏷️ 折扣碼</button>
         <button class="add-bk-btn" data-type="youtube">▶️ YouTube</button>
         <button class="add-bk-btn" data-type="bottom">📌 底部連結</button>
       </div>
@@ -584,6 +585,16 @@ function onItemUp(){
 /* ══════════════════════════════════
    BUILD BLOCK LIST UI
 ══════════════════════════════════ */
+/* ══ CALC DAYS ══ */
+function calcDays(dateStr){
+  if(!dateStr)return'?';
+  const target=new Date(dateStr);
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const diff=Math.ceil((target-today)/(1000*60*60*24));
+  return diff>0?diff:0;
+}
+
 /* ══ SIZE/BOLD CLASS HELPERS ══ */
 function szCls(b,size){return 'size-btn'+((b.titleSize||'medium')===size?' on':'');}
 function boldCls(b){return 'bold-btn'+(b.titleBold?' on':'');}
@@ -628,13 +639,14 @@ function rebuildBkList(){
   bindBkEvents();
 }
 
-function typeName(t){return{reels:'Reels',upcoming:'即將開團',products:'商品',links:'連結',youtube:'YouTube',bottom:'底部連結'}[t]||t}
+function typeName(t){return{reels:'Reels',upcoming:'即將開團',products:'商品',links:'連結',discount:'折扣碼',youtube:'YouTube',bottom:'底部連結'}[t]||t}
 
 function buildItemsUI(b){
   if(b.type==='reels')    return bReelsUI(b);
   if(b.type==='upcoming') return bUpcomingUI(b);
   if(b.type==='products') return bProductsUI(b);
   if(b.type==='links')    return bLinksUI(b);
+  if(b.type==='discount') return bDiscountUI(b);
   if(b.type==='youtube')  return bYoutubeUI(b);
   if(b.type==='bottom')   return bBottomUI(b);
   return'';
@@ -705,7 +717,9 @@ function bUpcomingUI(b){
   return`<div class="bi-list" data-bid="${b.id}">`+
     b.items.map((i,ii)=>biWrap(b,ii,'⏳',i.name||'(未命名)',`
       <div class="ef" style="margin-top:8px"><label>名稱</label><input class="ui ui-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
-      <div class="ef"><label>剩餘天數</label><input class="ui ui-days" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.daysLeft||'')}" placeholder="例：9"></div>`
+      <div class="ef"><label>開團日期（自動計算倒數天數）</label><input type="date" class="ui ui-date" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.targetDate||'')}">
+        ${i.targetDate?`<div style="font-size:11px;color:#b06050;margin-top:4px;font-weight:600">→ 還有 ${calcDays(i.targetDate)} 天</div>`:''}
+      </div>`
     )).join('')+`</div>`;
 }
 
@@ -746,6 +760,16 @@ function bLinksUI(b){
       <div class="ef"><label>副標題</label><input class="li li-sub" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.sub||'')}"></div>
       <div class="ef"><label>分類標籤</label><input class="li li-tag" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.tag||'')}" placeholder="選填"></div>
       <div class="ef"><label>URL</label><input class="li li-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}"></div>`
+    )).join('')+`</div>`;
+}
+
+function bDiscountUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,'🏷️',i.name||'(未命名)',`
+      <div class="ef" style="margin-top:8px"><label>品牌 / 活動名稱</label><input class="di di-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
+      <div class="ef"><label>說明文字</label><input class="di di-desc" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.desc||'')}" placeholder="例：結帳享85折"></div>
+      <div class="ef"><label>折扣碼</label><input class="di di-code" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.code||'')}" placeholder="例：OLIVIA10" style="font-weight:700;letter-spacing:1px"></div>
+      <div class="ef"><label>連結 URL（選填）</label><input class="di di-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}" placeholder="https://..."></div>`
     )).join('')+`</div>`;
 }
 
@@ -841,9 +865,10 @@ function bindBkEvents(){
     const b=S.blocks.find(b=>b.id===parseInt(btn.dataset.add));if(!b)return;
     const dflt={
       reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
-      upcoming:{name:'新團購',daysLeft:'7'},
+      upcoming:{name:'新團購',targetDate:'',daysLeft:'7'},
       products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
       links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
+      discount:{name:'品牌名稱',desc:'結帳享折扣',code:'CODE',url:''},
       youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
       bottom:{icon:'🔗',label:'新連結',url:''}
     };
@@ -879,7 +904,7 @@ function bindBkEvents(){
     if(cl.includes('ri-url'))  item.url=inp.value;
     if(cl.includes('ri-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
     if(cl.includes('ui-name')){item.name=inp.value;uBH(inp,'⏳',inp.value);}
-    if(cl.includes('ui-days')) item.daysLeft=inp.value;
+    if(cl.includes('ui-date')){item.targetDate=inp.value;item.daysLeft=String(calcDays(inp.value));}
     if(cl.includes('pi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.name);}
     if(cl.includes('pi-name')){item.name=inp.value;uBH(inp,item.emoji,inp.value);}
     if(cl.includes('pi-desc')) item.desc=inp.value;
@@ -898,7 +923,10 @@ function bindBkEvents(){
     if(cl.includes('yi-sub'))  item.sub=inp.value;
     if(cl.includes('yi-url'))  {item.url=inp.value;const yt=ytThumb(inp.value);if(yt&&!item.thumbData&&!item.thumbUrl)uTP(`tp-${bid}-${ii}`,yt);}
     if(cl.includes('yi-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
-    if(cl.includes('boi-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
+    if(cl.includes('di-name')){item.name=inp.value;uBH(inp,'🏷️',inp.value);}
+    if(cl.includes('di-desc')) item.desc=inp.value;
+    if(cl.includes('di-code')) item.code=inp.value;
+    if(cl.includes('di-url'))  item.url=inp.value;
     if(cl.includes('boi-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
     if(cl.includes('boi-url')) item.url=inp.value;
     dRender();setDirty(true);
@@ -984,12 +1012,13 @@ document.getElementById('thumbFileInput').addEventListener('change',async e=>{
 /* ══ ADD BLOCK ══ */
 document.querySelectorAll('.add-bk-btn').forEach(btn=>btn.addEventListener('click',()=>{
   const type=btn.dataset.type;
-  const titles={reels:'Reels 影片',upcoming:'即將開團',products:'開團好物',links:'精選連結',youtube:'YouTube 影片',bottom:'底部連結'};
+  const titles={reels:'Reels 影片',upcoming:'即將開團',products:'開團好物',links:'精選連結',discount:'折扣碼專區',youtube:'YouTube 影片',bottom:'底部連結'};
   const dflt={
     reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
-    upcoming:{name:'新團購',daysLeft:'7'},
+    upcoming:{name:'新團購',targetDate:'',daysLeft:'7'},
     products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
     links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
+    discount:{name:'品牌名稱',desc:'結帳享折扣',code:'CODE',url:''},
     youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
     bottom:{icon:'🔗',label:'新連結',url:''}
   };
@@ -1073,6 +1102,7 @@ function render(){
     if(b.type==='upcoming') bHTML+=pvUpcoming(b,th);
     if(b.type==='products') bHTML+=pvProducts(b,th);
     if(b.type==='links')    bHTML+=pvLinks(b,th);
+    if(b.type==='discount') bHTML+=pvDiscount(b,th);
     if(b.type==='youtube')  bHTML+=pvYoutube(b,th);
     if(b.type==='bottom')   bHTML+=pvBottom(b,th);
   });
@@ -1115,8 +1145,16 @@ function pvReels(b,th){
   </div>`;
 }
 function pvUpcoming(b,th){
-  const items=(b.items||[]).map(i=>`<div class="pv-upcoming-item" style="background:${th.card};border:1px solid ${th.border}"><span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span><span class="pv-upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span></div>`).join('');
-  return`<div class="pv-sec"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div><div class="pv-upcoming">${items}</div></div>`;
+  const items=(b.items||[]).map(i=>{
+    const days=i.targetDate?calcDays(i.targetDate):(i.daysLeft||'?');
+    return`<div class="pv-upcoming-item" style="background:${th.card};border:1px solid ${th.border}">
+      <span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span>
+      <span class="pv-upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${days} 天</span>
+    </div>`;}).join('');
+  return`<div class="pv-sec">
+    <div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+    <div class="pv-upcoming">${items}</div>
+  </div>`;
 }
 function pvProducts(b,th){
   const layout=b.layout||'1';const isGrid=layout!=='1';
@@ -1135,6 +1173,24 @@ function pvLinks(b,th){
   const links=(b.items||[]).map(i=>`<a class="pv-link-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><div class="pv-link-icon" style="background:${th.iconBg}">${esc(i.icon||'🔗')}</div><div style="flex:1;min-width:0"><span style="font-size:13.5px;font-weight:700;display:block;color:${th.text}">${esc(i.label||'')}</span>${i.sub?`<span style="font-size:11px;color:${th.muted};display:block;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.sub)}</span>`:''}</div><span style="font-size:17px;color:${th.muted}">›</span></a>`).join('');
   return`<div class="pv-sec"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div><div class="pv-links">${links}</div></div>`;
 }
+function pvDiscount(b,th){
+  const items=(b.items||[]).map(i=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;border:1px solid ${th.border};background:${th.card};box-shadow:0 1px 8px rgba(80,40,20,.07);margin-bottom:9px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</div>
+        ${i.desc?`<div style="font-size:11px;color:${th.muted};margin-top:2px">${esc(i.desc)}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+        <span style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent}">${esc(i.code||'CODE')}</span>
+        ${i.url?`<a href="${esc(i.url)}" target="_blank" style="font-size:11px;color:${th.muted};text-decoration:none">→</a>`:''}
+      </div>
+    </div>`).join('');
+  return`<div class="pv-sec">
+    <div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+    ${items}
+  </div>`;
+}
+
 function pvYoutube(b,th){
   const cards=(b.items||[]).map(i=>{
     const auto=ytThumb(i.url);const src=i.thumbData||i.thumbUrl||auto||null;
