@@ -799,125 +799,128 @@ function bBottomUI(b){
 
 /* ══ BIND BLOCK EVENTS ══ */
 let pendingBid=null,pendingIi=null,pendingKey=null;
+let _eventsInitialized=false;
 
-function bindBkEvents(){
-  // Clone to remove all old event listeners before re-binding
-  const oldList=document.getElementById('bkList');
-  const list=oldList.cloneNode(true);
-  oldList.parentNode.replaceChild(list,oldList);
+function initEditorEvents(){
+  if(_eventsInitialized)return;
+  _eventsInitialized=true;
 
-  /* toggle block open */
-  list.querySelectorAll('.bk-head').forEach(h=>{
-    h.addEventListener('click',e=>{
-      if(e.target.classList.contains('bk-del')||e.target.classList.contains('bk-drag-handle'))return;
-      h.closest('.bk').classList.toggle('open');
-    });
-  });
-  /* toggle item open */
-  list.querySelectorAll('.bi-head').forEach(h=>{
-    h.addEventListener('click',e=>{
-      if(e.target.classList.contains('bi-del')||e.target.classList.contains('bi-drag-handle'))return;
-      h.closest('.bi').classList.toggle('open');
-    });
-  });
+  // Use the stable parent container (tab-blocks) for all delegation
+  const container=document.getElementById('tab-blocks');
 
-  /* init item drag on each bi */
-  list.querySelectorAll('.bi').forEach(el=>{
-    const bid=parseInt(el.dataset.bid);
-    const ii=parseInt(el.dataset.ii);
-    initItemDrag(el,bid,ii);
-  });
-
-  /* delete block */
-  list.querySelectorAll('.bk-del').forEach(btn=>btn.addEventListener('click',e=>{
-    e.stopPropagation();
-    S.blocks=S.blocks.filter(b=>b.id!==parseInt(btn.dataset.bid));
-    rebuildBkList();render();setDirty(true);
-  }));
-  /* delete item */
-  list.querySelectorAll('.bi-del').forEach(btn=>btn.addEventListener('click',e=>{
-    e.stopPropagation();
-    const b=S.blocks.find(b=>b.id===parseInt(btn.dataset.bid));
-    if(b){b.items.splice(parseInt(btn.dataset.ii),1);rebuildBkList();render();setDirty(true);}
-  }));
-  /* block title size */
-  list.querySelectorAll('[data-bk-size]').forEach(btn=>btn.addEventListener('click',()=>{
-    const bid=parseInt(btn.dataset.bkSize);
-    const b=S.blocks.find(b=>b.id===bid);if(!b)return;
-    list.querySelectorAll(`[data-bk-size="${bid}"]`).forEach(x=>x.classList.remove('on'));
-    btn.classList.add('on');b.titleSize=btn.dataset.size;render();setDirty(true);
-  }));
-  /* block title bold */
-  list.querySelectorAll('[data-bk-bold]').forEach(btn=>btn.addEventListener('click',()=>{
-    const bid=parseInt(btn.dataset.bkBold);
-    const b=S.blocks.find(b=>b.id===bid);if(!b)return;
-    btn.classList.toggle('on');b.titleBold=btn.classList.contains('on');render();setDirty(true);
-  }));
-  /* block title */
-  list.querySelectorAll('.bk-title-inp').forEach(inp=>inp.addEventListener('input',()=>{
-    const b=S.blocks.find(b=>b.id===parseInt(inp.dataset.bid));
-    if(b){b.title=inp.value;inp.closest('.bk').querySelector('.bk-name').textContent=inp.value;dRender();setDirty(true);}
-  }));
-  /* product layout */
-  list.querySelectorAll('.bk-layout').forEach(sel=>sel.addEventListener('change',()=>{
-    const b=S.blocks.find(b=>b.id===parseInt(sel.dataset.bid));
-    if(b){b.layout=sel.value;render();setDirty(true);}
-  }));
-  /* add item */
-  list.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',()=>{
-    const bid=parseInt(btn.dataset.add);
-    const b=S.blocks.find(b=>b.id===bid);if(!b)return;
-    const dflt={
-      reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
-      upcoming:{name:'新團購',targetDate:'',daysLeft:'7'},
-      products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
-      links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
-      discount:{name:'品牌名稱',desc:'結帳享折扣',code:'CODE',url:''},
-      youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
-      bottom:{icon:'🔗',label:'新連結',url:''}
-    };
-    b.items.push({...(dflt[b.type]||{})});
-    rebuildBkList(); // this rebuilds and re-binds everything
-    // after rebuild, get fresh DOM reference
-    const freshList=document.getElementById('bkList');
-    const bkEl=freshList.querySelector(`.bk[data-id="${bid}"]`);
-    if(bkEl){
-      bkEl.classList.add('open');
-      const bis=bkEl.querySelectorAll('.bi');
-      if(bis.length)bis[bis.length-1].classList.add('open');
+  /* ── toggle block open/close ── */
+  container.addEventListener('click',e=>{
+    // block head toggle
+    const bkHead=e.target.closest('.bk-head');
+    if(bkHead&&!e.target.closest('.bk-del')&&!e.target.closest('.bk-drag-handle')){
+      bkHead.closest('.bk').classList.toggle('open');
+      return;
     }
-    render();setDirty(true);
-  }));
+    // item head toggle
+    const biHead=e.target.closest('.bi-head');
+    if(biHead&&!e.target.closest('.bi-del')&&!e.target.closest('.bi-drag-handle')){
+      biHead.closest('.bi').classList.toggle('open');
+      return;
+    }
+    // delete block
+    const bkDel=e.target.closest('.bk-del');
+    if(bkDel){
+      e.stopPropagation();
+      const bid=parseInt(bkDel.dataset.bid);
+      S.blocks=S.blocks.filter(b=>b.id!==bid);
+      rebuildBkList();render();setDirty(true);
+      return;
+    }
+    // delete item
+    const biDel=e.target.closest('.bi-del');
+    if(biDel){
+      e.stopPropagation();
+      const bid=parseInt(biDel.dataset.bid),ii=parseInt(biDel.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b){b.items.splice(ii,1);rebuildBkList();render();setDirty(true);}
+      return;
+    }
+    // block title size buttons
+    const sizeBtn=e.target.closest('[data-bk-size]');
+    if(sizeBtn){
+      const bid=parseInt(sizeBtn.dataset.bkSize);
+      const b=S.blocks.find(b=>b.id===bid);if(!b)return;
+      container.querySelectorAll(`[data-bk-size="${bid}"]`).forEach(x=>x.classList.remove('on'));
+      sizeBtn.classList.add('on');b.titleSize=sizeBtn.dataset.size;render();setDirty(true);
+      return;
+    }
+    // block title bold
+    const boldBtn=e.target.closest('[data-bk-bold]');
+    if(boldBtn){
+      const bid=parseInt(boldBtn.dataset.bkBold);
+      const b=S.blocks.find(b=>b.id===bid);if(!b)return;
+      boldBtn.classList.toggle('on');b.titleBold=boldBtn.classList.contains('on');render();setDirty(true);
+      return;
+    }
+    // add item
+    const addBtn=e.target.closest('[data-add]');
+    if(addBtn){
+      const bid=parseInt(addBtn.dataset.add);
+      const b=S.blocks.find(b=>b.id===bid);if(!b)return;
+      const dflt={
+        reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
+        upcoming:{name:'新團購',targetDate:'',daysLeft:'7'},
+        products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
+        links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
+        discount:{name:'品牌名稱',desc:'結帳享折扣',code:'CODE',url:''},
+        youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
+        bottom:{icon:'🔗',label:'新連結',url:''}
+      };
+      b.items.push({...(dflt[b.type]||{})});
+      rebuildBkList();
+      const bkEl=document.querySelector(`.bk[data-id="${bid}"]`);
+      if(bkEl){bkEl.classList.add('open');const bis=bkEl.querySelectorAll('.bi');if(bis.length)bis[bis.length-1].classList.add('open');}
+      render();setDirty(true);
+      return;
+    }
+    // thumb upload button
+    const thumbBtn=e.target.closest('.thumb-up-btn');
+    if(thumbBtn){
+      pendingBid=parseInt(thumbBtn.dataset.bid);
+      pendingIi=parseInt(thumbBtn.dataset.ii);
+      pendingKey=thumbBtn.dataset.key;
+      document.getElementById('thumbFileInput').click();
+      return;
+    }
+    // thumb preview click
+    const thumbPrev=e.target.closest('.thumb-prev');
+    if(thumbPrev&&!e.target.closest('.thumb-up-btn')){
+      pendingBid=parseInt(thumbPrev.dataset.bid);
+      pendingIi=parseInt(thumbPrev.dataset.ii);
+      pendingKey=thumbPrev.dataset.key;
+      document.getElementById('thumbFileInput').click();
+      return;
+    }
+  });
 
-  /* thumb upload labels */
-  list.querySelectorAll('.thumb-up-btn').forEach(lbl=>lbl.addEventListener('click',()=>{
-    pendingBid=parseInt(lbl.dataset.bid);pendingIi=parseInt(lbl.dataset.ii);pendingKey=lbl.dataset.key;
-    document.getElementById('thumbFileInput').click();
-  }));
-  list.querySelectorAll('.thumb-prev').forEach(prev=>prev.addEventListener('click',()=>{
-    pendingBid=parseInt(prev.dataset.bid);pendingIi=parseInt(prev.dataset.ii);pendingKey=prev.dataset.key;
-    document.getElementById('thumbFileInput').click();
-  }));
-
-  /* all input changes - bound on the new cloned list */
-  list.addEventListener('input',e=>{
+  /* ── input changes ── */
+  container.addEventListener('input',e=>{
     const inp=e.target;
+    // block title input
+    if(inp.classList.contains('bk-title-inp')){
+      const b=S.blocks.find(b=>b.id===parseInt(inp.dataset.bid));
+      if(b){b.title=inp.value;const nm=inp.closest('.bk')?.querySelector('.bk-name');if(nm)nm.textContent=inp.value;dRender();setDirty(true);}
+      return;
+    }
+    // item inputs
     const bid=parseInt(inp.dataset.bid),ii=parseInt(inp.dataset.ii);
     if(isNaN(bid)||isNaN(ii))return;
     const b=S.blocks.find(b=>b.id===bid);if(!b)return;
     const item=b.items[ii];if(!item)return;
     const cl=[...inp.classList];
-    // reels
-    if(cl.includes('ri-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
+    if     (cl.includes('ri-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
     else if(cl.includes('ri-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
     else if(cl.includes('ri-sub'))  item.sub=inp.value;
     else if(cl.includes('ri-tag'))  item.tag=inp.value;
     else if(cl.includes('ri-url'))  item.url=inp.value;
     else if(cl.includes('ri-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
-    // upcoming
     else if(cl.includes('ui-name')){item.name=inp.value;uBH(inp,'⏳',inp.value);}
     else if(cl.includes('ui-date')){item.targetDate=inp.value;item.daysLeft=String(calcDays(inp.value));}
-    // products
     else if(cl.includes('pi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.name);}
     else if(cl.includes('pi-name')){item.name=inp.value;uBH(inp,item.emoji,inp.value);}
     else if(cl.includes('pi-desc')) item.desc=inp.value;
@@ -926,33 +929,63 @@ function bindBkEvents(){
     else if(cl.includes('pi-cd'))   item.countdown=inp.value;
     else if(cl.includes('pi-btn'))  item.btnText=inp.value;
     else if(cl.includes('pi-url'))  item.url=inp.value;
-    // links
     else if(cl.includes('li-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
     else if(cl.includes('li-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
     else if(cl.includes('li-sub'))  item.sub=inp.value;
     else if(cl.includes('li-tag'))  item.tag=inp.value;
     else if(cl.includes('li-url'))  item.url=inp.value;
-    // youtube
     else if(cl.includes('yi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
     else if(cl.includes('yi-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
     else if(cl.includes('yi-sub'))  item.sub=inp.value;
     else if(cl.includes('yi-url'))  {item.url=inp.value;const yt=ytThumb(inp.value);if(yt&&!item.thumbData&&!item.thumbUrl)uTP(`tp-${bid}-${ii}`,yt);}
     else if(cl.includes('yi-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
-    // discount
     else if(cl.includes('di-name')){item.name=inp.value;uBH(inp,'🏷️',inp.value);}
     else if(cl.includes('di-desc')) item.desc=inp.value;
     else if(cl.includes('di-code')) item.code=inp.value;
     else if(cl.includes('di-url'))  item.url=inp.value;
-    // bottom links
     else if(cl.includes('boi-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
     else if(cl.includes('boi-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
     else if(cl.includes('boi-url')) item.url=inp.value;
     dRender();setDirty(true);
   });
-  list.querySelectorAll('.pi-feat').forEach(cb=>cb.addEventListener('change',()=>{
-    const b=S.blocks.find(b=>b.id===parseInt(cb.dataset.bid));
-    if(b){b.items[parseInt(cb.dataset.ii)].featured=cb.checked;render();setDirty(true);}
-  }));
+
+  /* ── select changes (product layout, product status) ── */
+  container.addEventListener('change',e=>{
+    const sel=e.target;
+    if(sel.classList.contains('bk-layout')){
+      const b=S.blocks.find(b=>b.id===parseInt(sel.dataset.bid));
+      if(b){b.layout=sel.value;render();setDirty(true);}
+    }
+    if(sel.classList.contains('pi-status')){
+      const bid=parseInt(sel.dataset.bid),ii=parseInt(sel.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b&&b.items[ii])b.items[ii].status=sel.value;
+      dRender();setDirty(true);
+    }
+    if(sel.classList.contains('pi-feat')){
+      const bid=parseInt(sel.dataset.bid),ii=parseInt(sel.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b&&b.items[ii])b.items[ii].featured=sel.checked;
+      render();setDirty(true);
+    }
+  });
+
+  /* ── checkbox (pi-feat) ── */
+  container.addEventListener('change',e=>{
+    if(e.target.classList.contains('pi-feat')){
+      const bid=parseInt(e.target.dataset.bid),ii=parseInt(e.target.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b&&b.items[ii])b.items[ii].featured=e.target.checked;
+      render();setDirty(true);
+    }
+  });
+}
+
+function bindBkEvents(){
+  // Now just init drag on newly built elements (drag can't use delegation easily)
+  const list=document.getElementById('bkList');
+  list.querySelectorAll('.bk').forEach(el=>initBlockDrag(el,parseInt(el.dataset.id)));
+  list.querySelectorAll('.bi').forEach(el=>initItemDrag(el,parseInt(el.dataset.bid),parseInt(el.dataset.ii)));
 }
 
 function uBH(inp,icon,label){
@@ -1233,6 +1266,10 @@ function pvBottom(b,th){
   const links=(b.items||[]).map(i=>`<a class="pv-bot-link" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><span style="font-size:20px">${esc(i.icon||'🔗')}</span><span>${esc(i.label||'')}</span></a>`).join('');
   return`<div class="pv-bot-links">${links}</div>`;
 }
+
+// ── INIT: bind events once, then load data ──
+initEditorEvents();
+loadFromSupabase().catch(()=>{rebuildBkList();render();setDirty(false);});
 </script>
 </body>
 </html>
