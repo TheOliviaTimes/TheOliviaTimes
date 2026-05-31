@@ -79,6 +79,12 @@ body{font-family:'Noto Sans TC','Noto Sans',sans-serif;min-height:100vh;color:#2
 .upcoming-item{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;box-shadow:0 1px 8px rgba(80,40,20,.07)}
 .upcoming-cd{font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-left:10px}
 
+/* upcoming tabs */
+.up-tabs{display:flex;gap:8px;margin-bottom:13px}
+.up-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;user-select:none;border:1px solid transparent;transition:.15s}
+.up-tab-panel{display:none}
+.up-tab-panel.active{display:block}
+
 /* products */
 .products-1{display:flex;flex-direction:column;gap:16px}
 .products-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -205,6 +211,7 @@ function buildPage(S){
     if(b.type==='upcoming') bHTML+=buildUpcoming(b,th);
     if(b.type==='products') bHTML+=buildProducts(b,th);
     if(b.type==='links')    bHTML+=buildLinks(b,th);
+    if(b.type==='discount') bHTML+=buildDiscount(b,th);
     if(b.type==='youtube')  bHTML+=buildYoutube(b,th);
     if(b.type==='bottom')   bHTML+=buildBottom(b,th);
   });
@@ -234,7 +241,7 @@ function buildReels(b,th){
     const src=i.thumbData||i.thumbUrl||null;
     const tH=src?`<img src="${esc(src)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:``;
     return`<a class="reel-card" href="${esc(i.url||'#')}" target="_blank" data-g="${b.id}" data-tag="${esc(i.tag||'')}" style="background:${th.card};border:1px solid ${th.border}">
-      <div class="reel-thumb" style="background:${th.iconBg}">${tH}<span style="${src?'display:none;':''}font-size:36px">${esc(i.emoji||'🎬')}</span>
+      <div class="reel-thumb" style="background:${th.iconBg};position:relative">${tH}<span style="${src?'display:none;':''}font-size:36px">${esc(i.emoji||'🎬')}</span>
         <div class="reel-play"><div class="reel-play-btn">▶</div></div>
       </div>
       <div class="reel-info">
@@ -250,13 +257,69 @@ function buildReels(b,th){
   </div>`;
 }
 
+function calcDays(dateStr){
+  if(!dateStr)return'?';
+  const target=new Date(dateStr);
+  const today=new Date();today.setHours(0,0,0,0);
+  const diff=Math.ceil((target-today)/(1000*60*60*24));
+  return diff>0?diff:0;
+}
+
 function buildUpcoming(b,th){
-  const items=(b.items||[]).map(i=>`
-    <div class="upcoming-item" style="background:${th.card};border:1px solid ${th.border}">
+  const upItems=(b.items||[]).filter(i=>i.itemType!=='discount');
+  const dcItems=(b.items||[]).filter(i=>i.itemType==='discount');
+  const uid='up-'+b.id;
+
+  const upHTML=upItems.map(i=>{
+    const days=i.targetDate?calcDays(i.targetDate):(i.daysLeft||'?');
+    return`<div class="upcoming-item" style="background:${th.card};border:1px solid ${th.border}">
       <span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span>
-      <span class="upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span>
+      <span class="upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${days} 天</span>
+    </div>`;}).join('');
+
+  const dcHTML=dcItems.map(i=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;border:1px solid ${th.border};background:${th.card};box-shadow:0 1px 8px rgba(80,40,20,.07);margin-bottom:9px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</div>
+        ${i.desc?`<div style="font-size:11px;color:${th.muted};margin-top:2px">${esc(i.desc)}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+        <span onclick="copyCode(this,'${esc(i.code||'')}')" style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent};cursor:pointer" title="點擊複製">${esc(i.code||'CODE')}</span>
+        ${i.url?`<a href="${esc(i.url)}" target="_blank" style="font-size:11px;color:${th.muted};text-decoration:none;margin-left:2px">→</a>`:''}
+      </div>
     </div>`).join('');
-  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div><div class="upcoming-list">${items}</div></div>`;
+
+  const titleStyle=`color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif`;
+
+  // only show tabs if there are discount items
+  if(dcItems.length===0){
+    return`<div class="sec a"><div style="${titleStyle}">${esc(b.title)}</div><div class="upcoming-list">${upHTML}</div></div>`;
+  }
+
+  return`<div class="sec a">
+    <div style="${titleStyle}">${esc(b.title)}</div>
+    <div class="up-tabs">
+      <span class="up-tab active" style="background:${th.text};color:#fff;border-color:${th.text}" onclick="switchUpTab('${uid}','up',this,${JSON.stringify({text:th.text,card:th.card,border:th.border,muted:th.muted})})">即將開團</span>
+      <span class="up-tab" style="background:${th.card};color:${th.muted};border-color:${th.border}" onclick="switchUpTab('${uid}','dc',this,${JSON.stringify({text:th.text,card:th.card,border:th.border,muted:th.muted})})">🏷️ 折扣碼｜優惠券</span>
+    </div>
+    <div id="${uid}-up" class="up-tab-panel active"><div class="upcoming-list">${upHTML}</div></div>
+    <div id="${uid}-dc" class="up-tab-panel">${dcHTML}</div>
+  </div>`;
+}
+
+function buildDiscount(b,th){
+  const items=(b.items||[]).map(i=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;border:1px solid ${th.border};background:${th.card};box-shadow:0 1px 8px rgba(80,40,20,.07);margin-bottom:9px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</div>
+        ${i.desc?`<div style="font-size:11px;color:${th.muted};margin-top:2px">${esc(i.desc)}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+        <span onclick="copyCode(this,'${esc(i.code||'')}')" style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent};cursor:pointer" title="點擊複製">${esc(i.code||'CODE')}</span>
+        ${i.url?`<a href="${esc(i.url)}" target="_blank" style="font-size:11px;color:${th.muted};text-decoration:none">→</a>`:''}
+      </div>
+    </div>`).join('');
+  return`<div class="sec a"><div style="color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif">${esc(b.title)}</div>${items}</div>`;
 }
 
 function buildProducts(b,th){
@@ -322,7 +385,7 @@ function buildYoutube(b,th){
     const src=i.thumbData||i.thumbUrl||auto||null;
     const tH=src?`<img src="${esc(src)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:``;
     return`<a class="yt-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}">
-      <div class="yt-thumb" style="background:${th.iconBg}">${tH}<span style="${src?'display:none;':''}font-size:34px">${esc(i.emoji||'📹')}</span>
+      <div class="yt-thumb" style="background:${th.iconBg};position:relative">${tH}<span style="${src?'display:none;':''}font-size:34px">${esc(i.emoji||'📹')}</span>
         <div class="yt-play"><div class="yt-play-btn">▶</div></div>
       </div>
       <div class="yt-info">
@@ -358,6 +421,25 @@ function doFilter(el){
     if(c.classList.contains('ftab'))return;
     c.style.display=(v==='all'||c.dataset.tag===v||c.dataset.tag==='')?'':'none';
   });
+}
+function copyCode(el,code){
+  navigator.clipboard.writeText(code).then(()=>{
+    const orig=el.textContent;
+    el.textContent='✓ 已複製！';
+    setTimeout(()=>{el.textContent=orig;},1500);
+  });
+}
+function switchUpTab(uid,panel,el,th){
+  // update tab styles
+  el.parentNode.querySelectorAll('.up-tab').forEach(t=>{
+    t.style.background=th.card;t.style.color=th.muted;t.style.borderColor=th.border;
+    t.classList.remove('active');
+  });
+  el.style.background=th.text;el.style.color='#fff';el.style.borderColor=th.text;
+  el.classList.add('active');
+  // switch panels
+  document.getElementById(uid+'-up').classList.toggle('active',panel==='up');
+  document.getElementById(uid+'-dc').classList.toggle('active',panel==='dc');
 }
 
 /* ══ INIT ══ */

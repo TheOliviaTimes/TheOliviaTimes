@@ -277,6 +277,7 @@ button,input,textarea,select{font-family:inherit}button{cursor:pointer}
         <button class="add-bk-btn" data-type="upcoming">⏳ 即將開團</button>
         <button class="add-bk-btn" data-type="products">🛍️ 商品</button>
         <button class="add-bk-btn" data-type="links">🔗 連結</button>
+        <button class="add-bk-btn" data-type="discount">🏷️ 折扣碼</button>
         <button class="add-bk-btn" data-type="youtube">▶️ YouTube</button>
         <button class="add-bk-btn" data-type="bottom">📌 底部連結</button>
       </div>
@@ -335,6 +336,7 @@ function doLogin(){
   if(pw===ADMIN_PASSWORD){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('appShell').style.display='flex';
+    initEditorEvents(); // bind once after app shell is visible
     loadFromSupabase();
   } else {
     document.getElementById('loginErr').textContent='密碼錯誤，請再試一次';
@@ -584,6 +586,16 @@ function onItemUp(){
 /* ══════════════════════════════════
    BUILD BLOCK LIST UI
 ══════════════════════════════════ */
+/* ══ CALC DAYS ══ */
+function calcDays(dateStr){
+  if(!dateStr)return'?';
+  const target=new Date(dateStr);
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const diff=Math.ceil((target-today)/(1000*60*60*24));
+  return diff>0?diff:0;
+}
+
 /* ══ SIZE/BOLD CLASS HELPERS ══ */
 function szCls(b,size){return 'size-btn'+((b.titleSize||'medium')===size?' on':'');}
 function boldCls(b){return 'bold-btn'+(b.titleBold?' on':'');}
@@ -628,13 +640,14 @@ function rebuildBkList(){
   bindBkEvents();
 }
 
-function typeName(t){return{reels:'Reels',upcoming:'即將開團',products:'商品',links:'連結',youtube:'YouTube',bottom:'底部連結'}[t]||t}
+function typeName(t){return{reels:'Reels',upcoming:'即將開團',products:'商品',links:'連結',discount:'折扣碼',youtube:'YouTube',bottom:'底部連結'}[t]||t}
 
 function buildItemsUI(b){
   if(b.type==='reels')    return bReelsUI(b);
   if(b.type==='upcoming') return bUpcomingUI(b);
   if(b.type==='products') return bProductsUI(b);
   if(b.type==='links')    return bLinksUI(b);
+  if(b.type==='discount') return bDiscountUI(b);
   if(b.type==='youtube')  return bYoutubeUI(b);
   if(b.type==='bottom')   return bBottomUI(b);
   return'';
@@ -703,10 +716,36 @@ function bReelsUI(b){
 
 function bUpcomingUI(b){
   return`<div class="bi-list" data-bid="${b.id}">`+
-    b.items.map((i,ii)=>biWrap(b,ii,'⏳',i.name||'(未命名)',`
-      <div class="ef" style="margin-top:8px"><label>名稱</label><input class="ui ui-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
-      <div class="ef"><label>剩餘天數</label><input class="ui ui-days" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.daysLeft||'')}" placeholder="例：9"></div>`
-    )).join('')+`</div>`;
+    b.items.map((i,ii)=>{
+      const isDiscount=i.itemType==='discount';
+      const icon=isDiscount?'🏷️':'⏳';
+      const label=isDiscount?(i.name||'折扣碼'):(i.name||'即將開團');
+      const body=isDiscount?`
+        <div class="ef" style="margin-top:8px">
+          <label>類型</label>
+          <select class="ui ui-itype" data-bid="${b.id}" data-ii="${ii}">
+            <option value="" ${!isDiscount?'selected':''}>⏳ 即將開團</option>
+            <option value="discount" ${isDiscount?'selected':''}>🏷️ 折扣碼｜優惠券</option>
+          </select>
+        </div>
+        <div class="ef"><label>品牌 / 活動名稱</label><input class="ui ui-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
+        <div class="ef"><label>說明文字</label><input class="ui ui-desc" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.desc||'')}" placeholder="例：結帳享85折"></div>
+        <div class="ef"><label>折扣碼</label><input class="ui ui-code" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.code||'')}" placeholder="例：OLIVIA10" style="font-weight:700;letter-spacing:1px"></div>
+        <div class="ef"><label>連結 URL（選填）</label><input class="ui ui-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}" placeholder="https://..."></div>`
+      :`
+        <div class="ef" style="margin-top:8px">
+          <label>類型</label>
+          <select class="ui ui-itype" data-bid="${b.id}" data-ii="${ii}">
+            <option value="" ${!isDiscount?'selected':''}>⏳ 即將開團</option>
+            <option value="discount" ${isDiscount?'selected':''}>🏷️ 折扣碼｜優惠券</option>
+          </select>
+        </div>
+        <div class="ef"><label>名稱</label><input class="ui ui-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
+        <div class="ef"><label>開團日期（自動計算倒數天數）</label><input type="date" class="ui ui-date" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.targetDate||'')}">
+          ${i.targetDate?`<div style="font-size:11px;color:#b06050;margin-top:4px;font-weight:600">→ 還有 ${calcDays(i.targetDate)} 天</div>`:''}
+        </div>`;
+      return biWrap(b,ii,icon,label,body);
+    }).join('')+`</div>`;
 }
 
 function bProductsUI(b){
@@ -749,6 +788,16 @@ function bLinksUI(b){
     )).join('')+`</div>`;
 }
 
+function bDiscountUI(b){
+  return`<div class="bi-list" data-bid="${b.id}">`+
+    b.items.map((i,ii)=>biWrap(b,ii,'🏷️',i.name||'(未命名)',`
+      <div class="ef" style="margin-top:8px"><label>品牌 / 活動名稱</label><input class="di di-name" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.name||'')}"></div>
+      <div class="ef"><label>說明文字</label><input class="di di-desc" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.desc||'')}" placeholder="例：結帳享85折"></div>
+      <div class="ef"><label>折扣碼</label><input class="di di-code" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.code||'')}" placeholder="例：OLIVIA10" style="font-weight:700;letter-spacing:1px"></div>
+      <div class="ef"><label>連結 URL（選填）</label><input class="di di-url" data-bid="${b.id}" data-ii="${ii}" value="${esc(i.url||'')}" placeholder="https://..."></div>`
+    )).join('')+`</div>`;
+}
+
 function bYoutubeUI(b){
   return`<div class="bi-list" data-bid="${b.id}">`+
     b.items.map((i,ii)=>biWrap(b,ii,i.emoji||'📹',i.title||'(未命名)',`
@@ -775,138 +824,258 @@ function bBottomUI(b){
 
 /* ══ BIND BLOCK EVENTS ══ */
 let pendingBid=null,pendingIi=null,pendingKey=null;
+let _eventsInitialized=false;
 
-function bindBkEvents(){
-  const list=document.getElementById('bkList');
+function initEditorEvents(){
+  if(_eventsInitialized)return;
+  _eventsInitialized=true;
 
-  /* toggle block open */
-  list.querySelectorAll('.bk-head').forEach(h=>{
-    h.addEventListener('click',e=>{
-      if(e.target.classList.contains('bk-del')||e.target.classList.contains('bk-drag-handle'))return;
-      h.closest('.bk').classList.toggle('open');
-    });
+  // Use the stable parent container (tab-blocks) for all delegation
+  const container=document.getElementById('tab-blocks');
+
+  /* ── toggle block open/close ── */
+  container.addEventListener('click',e=>{
+    // block head toggle
+    const bkHead=e.target.closest('.bk-head');
+    if(bkHead&&!e.target.closest('.bk-del')&&!e.target.closest('.bk-drag-handle')){
+      bkHead.closest('.bk').classList.toggle('open');
+      return;
+    }
+    // item head toggle
+    const biHead=e.target.closest('.bi-head');
+    if(biHead&&!e.target.closest('.bi-del')&&!e.target.closest('.bi-drag-handle')){
+      biHead.closest('.bi').classList.toggle('open');
+      return;
+    }
+    // delete block
+    const bkDel=e.target.closest('.bk-del');
+    if(bkDel){
+      e.stopPropagation();
+      const bid=parseInt(bkDel.dataset.bid);
+      S.blocks=S.blocks.filter(b=>b.id!==bid);
+      rebuildBkList();render();setDirty(true);
+      return;
+    }
+    // delete item
+    const biDel=e.target.closest('.bi-del');
+    if(biDel){
+      e.stopPropagation();
+      const bid=parseInt(biDel.dataset.bid),ii=parseInt(biDel.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b){b.items.splice(ii,1);rebuildBkList();render();setDirty(true);}
+      return;
+    }
+    // block title size buttons
+    const sizeBtn=e.target.closest('[data-bk-size]');
+    if(sizeBtn){
+      const bid=parseInt(sizeBtn.dataset.bkSize);
+      const b=S.blocks.find(b=>b.id===bid);if(!b)return;
+      container.querySelectorAll(`[data-bk-size="${bid}"]`).forEach(x=>x.classList.remove('on'));
+      sizeBtn.classList.add('on');b.titleSize=sizeBtn.dataset.size;render();setDirty(true);
+      return;
+    }
+    // block title bold
+    const boldBtn=e.target.closest('[data-bk-bold]');
+    if(boldBtn){
+      const bid=parseInt(boldBtn.dataset.bkBold);
+      const b=S.blocks.find(b=>b.id===bid);if(!b)return;
+      boldBtn.classList.toggle('on');b.titleBold=boldBtn.classList.contains('on');render();setDirty(true);
+      return;
+    }
+    // add item
+    const addBtn=e.target.closest('[data-add]');
+    if(addBtn){
+      const bid=parseInt(addBtn.dataset.add);
+      const b=S.blocks.find(b=>b.id===bid);if(!b)return;
+      const dflt={
+        reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
+        upcoming:{name:'新團購',targetDate:'',daysLeft:'7',itemType:''},
+        products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
+        links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
+        discount:{name:'品牌名稱',desc:'結帳享折扣',code:'CODE',url:''},
+        youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
+        bottom:{icon:'🔗',label:'新連結',url:''}
+      };
+      b.items.push({...(dflt[b.type]||{})});
+      rebuildBkList();
+      const bkEl=document.querySelector(`.bk[data-id="${bid}"]`);
+      if(bkEl){bkEl.classList.add('open');const bis=bkEl.querySelectorAll('.bi');if(bis.length)bis[bis.length-1].classList.add('open');}
+      render();setDirty(true);
+      return;
+    }
+    // thumb upload button
+    const thumbBtn=e.target.closest('.thumb-up-btn');
+    if(thumbBtn){
+      pendingBid=parseInt(thumbBtn.dataset.bid);
+      pendingIi=parseInt(thumbBtn.dataset.ii);
+      pendingKey=thumbBtn.dataset.key;
+      document.getElementById('thumbFileInput').click();
+      return;
+    }
+    // thumb preview click
+    const thumbPrev=e.target.closest('.thumb-prev');
+    if(thumbPrev&&!e.target.closest('.thumb-up-btn')){
+      pendingBid=parseInt(thumbPrev.dataset.bid);
+      pendingIi=parseInt(thumbPrev.dataset.ii);
+      pendingKey=thumbPrev.dataset.key;
+      document.getElementById('thumbFileInput').click();
+      return;
+    }
   });
-  /* toggle item open */
-  list.querySelectorAll('.bi-head').forEach(h=>{
-    h.addEventListener('click',e=>{
-      if(e.target.classList.contains('bi-del')||e.target.classList.contains('bi-drag-handle'))return;
-      h.closest('.bi').classList.toggle('open');
-    });
-  });
 
-  /* init item drag on each bi */
-  list.querySelectorAll('.bi').forEach(el=>{
-    const bid=parseInt(el.dataset.bid);
-    const ii=parseInt(el.dataset.ii);
-    initItemDrag(el,bid,ii);
-  });
-
-  /* delete block */
-  list.querySelectorAll('.bk-del').forEach(btn=>btn.addEventListener('click',e=>{
-    e.stopPropagation();
-    S.blocks=S.blocks.filter(b=>b.id!==parseInt(btn.dataset.bid));
-    rebuildBkList();render();setDirty(true);
-  }));
-  /* delete item */
-  list.querySelectorAll('.bi-del').forEach(btn=>btn.addEventListener('click',e=>{
-    e.stopPropagation();
-    const b=S.blocks.find(b=>b.id===parseInt(btn.dataset.bid));
-    if(b){b.items.splice(parseInt(btn.dataset.ii),1);rebuildBkList();render();setDirty(true);}
-  }));
-  /* block title size */
-  list.querySelectorAll('[data-bk-size]').forEach(btn=>btn.addEventListener('click',()=>{
-    const bid=parseInt(btn.dataset.bkSize);
-    const b=S.blocks.find(b=>b.id===bid);if(!b)return;
-    list.querySelectorAll(`[data-bk-size="${bid}"]`).forEach(x=>x.classList.remove('on'));
-    btn.classList.add('on');b.titleSize=btn.dataset.size;render();setDirty(true);
-  }));
-  /* block title bold */
-  list.querySelectorAll('[data-bk-bold]').forEach(btn=>btn.addEventListener('click',()=>{
-    const bid=parseInt(btn.dataset.bkBold);
-    const b=S.blocks.find(b=>b.id===bid);if(!b)return;
-    btn.classList.toggle('on');b.titleBold=btn.classList.contains('on');render();setDirty(true);
-  }));
-  /* block title */
-  list.querySelectorAll('.bk-title-inp').forEach(inp=>inp.addEventListener('input',()=>{
-    const b=S.blocks.find(b=>b.id===parseInt(inp.dataset.bid));
-    if(b){b.title=inp.value;inp.closest('.bk').querySelector('.bk-name').textContent=inp.value;dRender();setDirty(true);}
-  }));
-  /* product layout */
-  list.querySelectorAll('.bk-layout').forEach(sel=>sel.addEventListener('change',()=>{
-    const b=S.blocks.find(b=>b.id===parseInt(sel.dataset.bid));
-    if(b){b.layout=sel.value;render();setDirty(true);}
-  }));
-  /* add item */
-  list.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',()=>{
-    const b=S.blocks.find(b=>b.id===parseInt(btn.dataset.add));if(!b)return;
-    const dflt={
-      reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
-      upcoming:{name:'新團購',daysLeft:'7'},
-      products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
-      links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
-      youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
-      bottom:{icon:'🔗',label:'新連結',url:''}
-    };
-    b.items.push({...(dflt[b.type]||{})});
-    rebuildBkList();
-    const bkEl=list.querySelector(`.bk[data-id="${b.id}"]`);
-    if(bkEl){bkEl.classList.add('open');const bis=bkEl.querySelectorAll('.bi');if(bis.length)bis[bis.length-1].classList.add('open');}
-    render();setDirty(true);
-  }));
-
-  /* thumb upload labels */
-  list.querySelectorAll('.thumb-up-btn').forEach(lbl=>lbl.addEventListener('click',()=>{
-    pendingBid=parseInt(lbl.dataset.bid);pendingIi=parseInt(lbl.dataset.ii);pendingKey=lbl.dataset.key;
-    document.getElementById('thumbFileInput').click();
-  }));
-  list.querySelectorAll('.thumb-prev').forEach(prev=>prev.addEventListener('click',()=>{
-    pendingBid=parseInt(prev.dataset.bid);pendingIi=parseInt(prev.dataset.ii);pendingKey=prev.dataset.key;
-    document.getElementById('thumbFileInput').click();
-  }));
-
-  /* all input changes */
-  list.addEventListener('input',e=>{
+  /* ── input changes ── */
+  container.addEventListener('input',e=>{
     const inp=e.target;
+    // block title input
+    if(inp.classList.contains('bk-title-inp')){
+      const b=S.blocks.find(b=>b.id===parseInt(inp.dataset.bid));
+      if(b){b.title=inp.value;const nm=inp.closest('.bk')?.querySelector('.bk-name');if(nm)nm.textContent=inp.value;dRender();setDirty(true);}
+      return;
+    }
+    // item inputs
     const bid=parseInt(inp.dataset.bid),ii=parseInt(inp.dataset.ii);
     if(isNaN(bid)||isNaN(ii))return;
     const b=S.blocks.find(b=>b.id===bid);if(!b)return;
     const item=b.items[ii];if(!item)return;
     const cl=[...inp.classList];
-    if(cl.includes('ri-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
-    if(cl.includes('ri-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
-    if(cl.includes('ri-sub'))  item.sub=inp.value;
-    if(cl.includes('ri-tag'))  item.tag=inp.value;
-    if(cl.includes('ri-url'))  item.url=inp.value;
-    if(cl.includes('ri-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
-    if(cl.includes('ui-name')){item.name=inp.value;uBH(inp,'⏳',inp.value);}
-    if(cl.includes('ui-days')) item.daysLeft=inp.value;
-    if(cl.includes('pi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.name);}
-    if(cl.includes('pi-name')){item.name=inp.value;uBH(inp,item.emoji,inp.value);}
-    if(cl.includes('pi-desc')) item.desc=inp.value;
-    if(cl.includes('pi-img'))  {item.imgUrl=inp.value;uTP(`pp-${bid}-${ii}`,inp.value||item.imgData);}
-    if(cl.includes('pi-status'))item.status=inp.value;
-    if(cl.includes('pi-cd'))   item.countdown=inp.value;
-    if(cl.includes('pi-btn'))  item.btnText=inp.value;
-    if(cl.includes('pi-url'))  item.url=inp.value;
-    if(cl.includes('li-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
-    if(cl.includes('li-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
-    if(cl.includes('li-sub'))  item.sub=inp.value;
-    if(cl.includes('li-tag'))  item.tag=inp.value;
-    if(cl.includes('li-url'))  item.url=inp.value;
-    if(cl.includes('yi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
-    if(cl.includes('yi-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
-    if(cl.includes('yi-sub'))  item.sub=inp.value;
-    if(cl.includes('yi-url'))  {item.url=inp.value;const yt=ytThumb(inp.value);if(yt&&!item.thumbData&&!item.thumbUrl)uTP(`tp-${bid}-${ii}`,yt);}
-    if(cl.includes('yi-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
-    if(cl.includes('boi-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
-    if(cl.includes('boi-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
-    if(cl.includes('boi-url')) item.url=inp.value;
+    if     (cl.includes('ri-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
+    else if(cl.includes('ri-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
+    else if(cl.includes('ri-sub'))  item.sub=inp.value;
+    else if(cl.includes('ri-tag'))  item.tag=inp.value;
+    else if(cl.includes('ri-url'))  item.url=inp.value;
+    else if(cl.includes('ri-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
+    else if(cl.includes('ui-name')){item.name=inp.value;uBH(inp,item.itemType==='discount'?'🏷️':'⏳',inp.value);}
+    else if(cl.includes('ui-date')){item.targetDate=inp.value;item.daysLeft=String(calcDays(inp.value));}
+    else if(cl.includes('ui-desc')) item.desc=inp.value;
+    else if(cl.includes('ui-code')) item.code=inp.value;
+    else if(cl.includes('ui-url'))  item.url=inp.value;
+    else if(cl.includes('ui-itype')){item.itemType=inp.value;rebuildBkList();}
+    else if(cl.includes('pi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.name);}
+    else if(cl.includes('pi-name')){item.name=inp.value;uBH(inp,item.emoji,inp.value);}
+    else if(cl.includes('pi-desc')) item.desc=inp.value;
+    else if(cl.includes('pi-img'))  {item.imgUrl=inp.value;uTP(`pp-${bid}-${ii}`,inp.value||item.imgData);}
+    else if(cl.includes('pi-status'))item.status=inp.value;
+    else if(cl.includes('pi-cd'))   item.countdown=inp.value;
+    else if(cl.includes('pi-btn'))  item.btnText=inp.value;
+    else if(cl.includes('pi-url'))  item.url=inp.value;
+    else if(cl.includes('li-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
+    else if(cl.includes('li-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
+    else if(cl.includes('li-sub'))  item.sub=inp.value;
+    else if(cl.includes('li-tag'))  item.tag=inp.value;
+    else if(cl.includes('li-url'))  item.url=inp.value;
+    else if(cl.includes('yi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.title);}
+    else if(cl.includes('yi-title')){item.title=inp.value;uBH(inp,item.emoji,inp.value);}
+    else if(cl.includes('yi-sub'))  item.sub=inp.value;
+    else if(cl.includes('yi-url'))  {item.url=inp.value;const yt=ytThumb(inp.value);if(yt&&!item.thumbData&&!item.thumbUrl)uTP(`tp-${bid}-${ii}`,yt);}
+    else if(cl.includes('yi-thumb')){item.thumbUrl=inp.value;uTP(`tp-${bid}-${ii}`,inp.value||item.thumbData);}
+    else if(cl.includes('di-name')){item.name=inp.value;uBH(inp,'🏷️',inp.value);}
+    else if(cl.includes('di-desc')) item.desc=inp.value;
+    else if(cl.includes('di-code')) item.code=inp.value;
+    else if(cl.includes('di-url'))  item.url=inp.value;
+    else if(cl.includes('boi-icon')){item.icon=inp.value;uBH(inp,inp.value,item.label);}
+    else if(cl.includes('boi-label')){item.label=inp.value;uBH(inp,item.icon,inp.value);}
+    else if(cl.includes('boi-url')) item.url=inp.value;
     dRender();setDirty(true);
   });
-  list.querySelectorAll('.pi-feat').forEach(cb=>cb.addEventListener('change',()=>{
-    const b=S.blocks.find(b=>b.id===parseInt(cb.dataset.bid));
-    if(b){b.items[parseInt(cb.dataset.ii)].featured=cb.checked;render();setDirty(true);}
+
+  /* ── select changes (product layout, product status) ── */
+  container.addEventListener('change',e=>{
+    const sel=e.target;
+    if(sel.classList.contains('bk-layout')){
+      const b=S.blocks.find(b=>b.id===parseInt(sel.dataset.bid));
+      if(b){b.layout=sel.value;render();setDirty(true);}
+    }
+    if(sel.classList.contains('pi-status')){
+      const bid=parseInt(sel.dataset.bid),ii=parseInt(sel.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b&&b.items[ii])b.items[ii].status=sel.value;
+      dRender();setDirty(true);
+    }
+    if(sel.classList.contains('pi-feat')){
+      const bid=parseInt(sel.dataset.bid),ii=parseInt(sel.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b&&b.items[ii])b.items[ii].featured=sel.checked;
+      render();setDirty(true);
+    }
+  });
+
+  /* ── checkbox (pi-feat) ── */
+  container.addEventListener('change',e=>{
+    if(e.target.classList.contains('pi-feat')){
+      const bid=parseInt(e.target.dataset.bid),ii=parseInt(e.target.dataset.ii);
+      const b=S.blocks.find(b=>b.id===bid);
+      if(b&&b.items[ii])b.items[ii].featured=e.target.checked;
+      render();setDirty(true);
+    }
+  });
+  /* ── add new block buttons ── */
+  document.querySelectorAll('.add-bk-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    const type=btn.dataset.type;
+    const titles={reels:'Reels 影片',upcoming:'即將開團',products:'開團好物',links:'精選連結',discount:'折扣碼專區',youtube:'YouTube 影片',bottom:'底部連結'};
+    const dflt={
+      reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
+      upcoming:{name:'新團購',targetDate:'',daysLeft:'7',itemType:''},
+      products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
+      links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
+      discount:{name:'品牌名稱',desc:'結帳享折扣',code:'CODE',url:''},
+      youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
+      bottom:{icon:'🔗',label:'新連結',url:''}
+    };
+    const nb={id:nextId++,type,title:titles[type]||'新區塊',items:[{...(dflt[type]||{})}],layout:'1'};
+    S.blocks.push(nb);
+    document.querySelectorAll('.etab').forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('.epanel').forEach(p=>p.classList.remove('on'));
+    document.querySelector('.etab[data-tab="blocks"]').classList.add('on');
+    document.getElementById('tab-blocks').classList.add('on');
+    rebuildBkList();
+    const el=document.querySelector(`.bk[data-id="${nb.id}"]`);if(el)el.classList.add('open');
+    render();setDirty(true);
   }));
+
+  /* ── profile inputs ── */
+  ['name','sub','bio','ig','yt','fb','line','web','email','footer'].forEach(k=>{
+    const el=document.getElementById('f-'+k);
+    if(el)el.addEventListener('input',()=>{S[k]=el.value;dRender();setDirty(true);});
+  });
+  document.getElementById('f-div').addEventListener('change',e=>{S.divider=e.target.value;render();setDirty(true);});
+  document.querySelectorAll(".size-btn[data-target='bio']").forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll(".size-btn[data-target='bio']").forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');S.bioSize=btn.dataset.size;render();setDirty(true);
+  }));
+  document.getElementById('bio-bold-btn')?.addEventListener('click',function(){
+    this.classList.toggle('on');S.bioBold=this.classList.contains('on');render();setDirty(true);
+  });
+  document.querySelectorAll('.align-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');S.bioAlign=btn.dataset.align;render();setDirty(true);
+  }));
+  document.querySelectorAll('.etab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.etab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.epanel').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');document.getElementById('tab-'+t.dataset.tab).classList.add('on');
+  }));
+  document.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{
+    document.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));
+    sw.classList.add('on');S.theme=sw.dataset.th;render();setDirty(true);
+  }));
+  document.getElementById('avCircle').addEventListener('click',()=>document.getElementById('avatarInput').click());
+  document.getElementById('avatarInput').addEventListener('change',async e=>{
+    const f=e.target.files[0];if(!f)return;
+    toast('⏳ 上傳大頭照中...');
+    const blob=await compressImage(f,400,0.80);
+    const url=await uploadToStorage(blob,`avatar_${Date.now()}.jpg`);
+    S.avatar=url;
+    document.getElementById('avCircle').innerHTML=`<img src="${url}" alt=""><div class="av-ov">📷</div>`;
+    render();setDirty(true);
+    toast('✅ 大頭照上傳完成');
+  });
+}
+
+function bindBkEvents(){
+  // Now just init drag on newly built elements (drag can't use delegation easily)
+  const list=document.getElementById('bkList');
+  list.querySelectorAll('.bk').forEach(el=>initBlockDrag(el,parseInt(el.dataset.id)));
+  list.querySelectorAll('.bi').forEach(el=>initItemDrag(el,parseInt(el.dataset.bid),parseInt(el.dataset.ii)));
 }
 
 function uBH(inp,icon,label){
@@ -982,66 +1151,8 @@ document.getElementById('thumbFileInput').addEventListener('change',async e=>{
 });
 
 /* ══ ADD BLOCK ══ */
-document.querySelectorAll('.add-bk-btn').forEach(btn=>btn.addEventListener('click',()=>{
-  const type=btn.dataset.type;
-  const titles={reels:'Reels 影片',upcoming:'即將開團',products:'開團好物',links:'精選連結',youtube:'YouTube 影片',bottom:'底部連結'};
-  const dflt={
-    reels:{emoji:'🎬',title:'新影片',sub:'',tag:'',thumbUrl:'',thumbData:null,url:''},
-    upcoming:{name:'新團購',daysLeft:'7'},
-    products:{emoji:'📦',name:'新商品',desc:'',imgUrl:'',imgData:null,status:'open',countdown:'',btnText:'前往購買',featured:false,url:''},
-    links:{icon:'🔗',label:'新連結',sub:'',tag:'',url:''},
-    youtube:{emoji:'📹',title:'新影片',sub:'',thumbUrl:'',thumbData:null,url:''},
-    bottom:{icon:'🔗',label:'新連結',url:''}
-  };
-  const nb={id:nextId++,type,title:titles[type]||'新區塊',items:[{...(dflt[type]||{})}],layout:'1'};
-  S.blocks.push(nb);
-  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('on'));
-  document.querySelectorAll('.epanel').forEach(p=>p.classList.remove('on'));
-  document.querySelector('.etab[data-tab="blocks"]').classList.add('on');
-  document.getElementById('tab-blocks').classList.add('on');
-  rebuildBkList();
-  const el=document.querySelector(`.bk[data-id="${nb.id}"]`);if(el)el.classList.add('open');
-  render();setDirty(true);
-}));
-
 /* ══ PROFILE INPUTS ══ */
-['name','sub','bio','ig','yt','fb','line','web','email','footer'].forEach(k=>{
-  const el=document.getElementById('f-'+k);
-  if(el)el.addEventListener('input',()=>{S[k]=el.value;dRender();setDirty(true);});
-});
-document.getElementById('f-div').addEventListener('change',e=>{S.divider=e.target.value;render();setDirty(true);});
-/* bio size/bold */
-document.querySelectorAll(".size-btn[data-target='bio']").forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll(".size-btn[data-target='bio']").forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');S.bioSize=btn.dataset.size;render();setDirty(true);
-}));
-document.getElementById('bio-bold-btn')?.addEventListener('click',function(){
-  this.classList.toggle('on');S.bioBold=this.classList.contains('on');render();setDirty(true);
-});
-document.querySelectorAll('.align-btn').forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');S.bioAlign=btn.dataset.align;render();setDirty(true);
-}));
-document.querySelectorAll('.etab').forEach(t=>t.addEventListener('click',()=>{
-  document.querySelectorAll('.etab').forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('.epanel').forEach(x=>x.classList.remove('on'));
-  t.classList.add('on');document.getElementById('tab-'+t.dataset.tab).classList.add('on');
-}));
-document.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{
-  document.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));
-  sw.classList.add('on');S.theme=sw.dataset.th;render();setDirty(true);
-}));
-document.getElementById('avCircle').addEventListener('click',()=>document.getElementById('avatarInput').click());
-document.getElementById('avatarInput').addEventListener('change',async e=>{
-  const f=e.target.files[0];if(!f)return;
-  toast('⏳ 上傳大頭照中...');
-  const blob=await compressImage(f, 400, 0.80);
-  const url=await uploadToStorage(blob, `avatar_${Date.now()}.jpg`);
-  S.avatar=url;
-  document.getElementById('avCircle').innerHTML=`<img src="${url}" alt=""><div class="av-ov">📷</div>`;
-  render();setDirty(true);
-  toast('✅ 大頭照上傳完成');
-});
+/* (all handled inside initEditorEvents below) */
 
 /* ══ RENDER PREVIEW ══ */
 function render(){
@@ -1073,6 +1184,7 @@ function render(){
     if(b.type==='upcoming') bHTML+=pvUpcoming(b,th);
     if(b.type==='products') bHTML+=pvProducts(b,th);
     if(b.type==='links')    bHTML+=pvLinks(b,th);
+    if(b.type==='discount') bHTML+=pvDiscount(b,th);
     if(b.type==='youtube')  bHTML+=pvYoutube(b,th);
     if(b.type==='bottom')   bHTML+=pvBottom(b,th);
   });
@@ -1115,8 +1227,43 @@ function pvReels(b,th){
   </div>`;
 }
 function pvUpcoming(b,th){
-  const items=(b.items||[]).map(i=>`<div class="pv-upcoming-item" style="background:${th.card};border:1px solid ${th.border}"><span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span><span class="pv-upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${esc(i.daysLeft||'?')} 天</span></div>`).join('');
-  return`<div class="pv-sec"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div><div class="pv-upcoming">${items}</div></div>`;
+  const upItems=(b.items||[]).filter(i=>i.itemType!=='discount');
+  const dcItems=(b.items||[]).filter(i=>i.itemType==='discount');
+
+  const upHTML=upItems.map(i=>{
+    const days=i.targetDate?calcDays(i.targetDate):(i.daysLeft||'?');
+    return`<div class="pv-upcoming-item" style="background:${th.card};border:1px solid ${th.border}">
+      <span style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</span>
+      <span class="pv-upcoming-cd" style="background:${th.accentBg};color:${th.accent}">還有 ${days} 天</span>
+    </div>`;}).join('');
+
+  const dcHTML=dcItems.map(i=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;border:1px solid ${th.border};background:${th.card};box-shadow:0 1px 8px rgba(80,40,20,.07);margin-bottom:9px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</div>
+        ${i.desc?`<div style="font-size:11px;color:${th.muted};margin-top:2px">${esc(i.desc)}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+        <span style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent}">${esc(i.code||'CODE')}</span>
+        ${i.url?`<span style="font-size:11px;color:${th.muted}">→</span>`:''}
+      </div>
+    </div>`).join('');
+
+  if(dcItems.length===0){
+    return`<div class="pv-sec">
+      <div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+      <div class="pv-upcoming">${upHTML}</div>
+    </div>`;
+  }
+
+  return`<div class="pv-sec">
+    <div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+    <div style="display:flex;gap:8px;margin-bottom:13px">
+      <span style="padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;background:${th.text};color:#fff;border:1px solid ${th.text}">即將開團</span>
+      <span style="padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;background:${th.card};color:${th.muted};border:1px solid ${th.border}">🏷️ 折扣碼｜優惠券</span>
+    </div>
+    <div class="pv-upcoming">${upHTML}</div>
+  </div>`;
 }
 function pvProducts(b,th){
   const layout=b.layout||'1';const isGrid=layout!=='1';
@@ -1135,6 +1282,24 @@ function pvLinks(b,th){
   const links=(b.items||[]).map(i=>`<a class="pv-link-card" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><div class="pv-link-icon" style="background:${th.iconBg}">${esc(i.icon||'🔗')}</div><div style="flex:1;min-width:0"><span style="font-size:13.5px;font-weight:700;display:block;color:${th.text}">${esc(i.label||'')}</span>${i.sub?`<span style="font-size:11px;color:${th.muted};display:block;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.sub)}</span>`:''}</div><span style="font-size:17px;color:${th.muted}">›</span></a>`).join('');
   return`<div class="pv-sec"><div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div><div class="pv-links">${links}</div></div>`;
 }
+function pvDiscount(b,th){
+  const items=(b.items||[]).map(i=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-radius:14px;border:1px solid ${th.border};background:${th.card};box-shadow:0 1px 8px rgba(80,40,20,.07);margin-bottom:9px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:${th.text}">${esc(i.name||'')}</div>
+        ${i.desc?`<div style="font-size:11px;color:${th.muted};margin-top:2px">${esc(i.desc)}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
+        <span style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent}">${esc(i.code||'CODE')}</span>
+        ${i.url?`<a href="${esc(i.url)}" target="_blank" style="font-size:11px;color:${th.muted};text-decoration:none">→</a>`:''}
+      </div>
+    </div>`).join('');
+  return`<div class="pv-sec">
+    <div style="color:${th.text};font-size:${titleFontSize(b)};font-weight:${titleFontWeight(b)};margin-bottom:13px">${esc(b.title)}</div>
+    ${items}
+  </div>`;
+}
+
 function pvYoutube(b,th){
   const cards=(b.items||[]).map(i=>{
     const auto=ytThumb(i.url);const src=i.thumbData||i.thumbUrl||auto||null;
@@ -1159,6 +1324,8 @@ function pvBottom(b,th){
   const links=(b.items||[]).map(i=>`<a class="pv-bot-link" href="${esc(i.url||'#')}" target="_blank" style="background:${th.card};border:1px solid ${th.border};color:${th.text}"><span style="font-size:20px">${esc(i.icon||'🔗')}</span><span>${esc(i.label||'')}</span></a>`).join('');
   return`<div class="pv-bot-links">${links}</div>`;
 }
+
+// (events initialized in doLogin, data loaded in loadFromSupabase)
 </script>
 </body>
 </html>
