@@ -81,7 +81,7 @@ body{font-family:'Noto Sans TC','Noto Sans',sans-serif;min-height:100vh;color:#2
 
 /* upcoming tabs */
 .up-tabs{display:flex;gap:8px;margin-bottom:13px}
-.up-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;user-select:none;border:1px solid transparent;transition:.15s}
+.up-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;user-select:none;border:1px solid transparent;transition:all .15s}
 .up-tab-panel{display:none}
 .up-tab-panel.active{display:block}
 
@@ -268,7 +268,11 @@ function calcDays(dateStr){
 function buildUpcoming(b,th){
   const upItems=(b.items||[]).filter(i=>i.itemType!=='discount');
   const dcItems=(b.items||[]).filter(i=>i.itemType==='discount');
+  const hasUp=upItems.length>0;
+  const hasDc=dcItems.length>0;
   const uid='up-'+b.id;
+
+  const titleStyle=`color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif`;
 
   const upHTML=upItems.map(i=>{
     const days=i.targetDate?calcDays(i.targetDate):(i.daysLeft||'?');
@@ -284,23 +288,32 @@ function buildUpcoming(b,th){
         ${i.desc?`<div style="font-size:11px;color:${th.muted};margin-top:2px">${esc(i.desc)}</div>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px">
-        <span onclick="copyCode(this,'${esc(i.code||'')}')" style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent};cursor:pointer" title="點擊複製">${esc(i.code||'CODE')}</span>
+        <span onclick="copyCode(this,this.dataset.code)" data-code="${esc(i.code||'')}" style="background:${th.accentBg};color:${th.accent};font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px;border:1.5px dashed ${th.accent};cursor:pointer" title="點擊複製">${esc(i.code||'CODE')}</span>
         ${i.url?`<a href="${esc(i.url)}" target="_blank" style="font-size:11px;color:${th.muted};text-decoration:none;margin-left:2px">→</a>`:''}
       </div>
     </div>`).join('');
 
-  const titleStyle=`color:${th.text};font-size:${{small:'11px',medium:'17px',large:'22px'}[b.titleSize||'medium']};font-weight:${b.titleBold?'700':'500'};margin-bottom:13px;font-family:'Noto Sans TC','Noto Sans',sans-serif`;
-
-  // only show tabs if there are discount items
-  if(dcItems.length===0){
+  // no tabs needed if only one type
+  if(!hasDc){
     return`<div class="sec a"><div style="${titleStyle}">${esc(b.title)}</div><div class="upcoming-list">${upHTML}</div></div>`;
+  }
+  if(!hasUp){
+    return`<div class="sec a">
+      <div style="${titleStyle}">${esc(b.title)}</div>
+      <div class="up-tabs">
+        <span class="up-tab" style="background:${th.card};color:${th.muted};border:1px solid ${th.border}" data-uid="${uid}" data-panel="up" onclick="switchUpTab(this)">即將開團</span>
+        <span class="up-tab active" style="background:${th.text};color:#fff;border:1px solid ${th.text}" data-uid="${uid}" data-panel="dc" onclick="switchUpTab(this)">🏷️ 折扣碼｜優惠券</span>
+      </div>
+      <div id="${uid}-up" class="up-tab-panel"></div>
+      <div id="${uid}-dc" class="up-tab-panel active">${dcHTML}</div>
+    </div>`;
   }
 
   return`<div class="sec a">
     <div style="${titleStyle}">${esc(b.title)}</div>
     <div class="up-tabs">
-      <span class="up-tab active" style="background:${th.text};color:#fff;border-color:${th.text}" onclick="switchUpTab('${uid}','up',this,${JSON.stringify({text:th.text,card:th.card,border:th.border,muted:th.muted})})">即將開團</span>
-      <span class="up-tab" style="background:${th.card};color:${th.muted};border-color:${th.border}" onclick="switchUpTab('${uid}','dc',this,${JSON.stringify({text:th.text,card:th.card,border:th.border,muted:th.muted})})">🏷️ 折扣碼｜優惠券</span>
+      <span class="up-tab active" style="background:${th.text};color:#fff;border:1px solid ${th.text}" data-uid="${uid}" data-panel="up" onclick="switchUpTab(this)">即將開團</span>
+      <span class="up-tab" style="background:${th.card};color:${th.muted};border:1px solid ${th.border}" data-uid="${uid}" data-panel="dc" onclick="switchUpTab(this)">🏷️ 折扣碼｜優惠券</span>
     </div>
     <div id="${uid}-up" class="up-tab-panel active"><div class="upcoming-list">${upHTML}</div></div>
     <div id="${uid}-dc" class="up-tab-panel">${dcHTML}</div>
@@ -429,17 +442,23 @@ function copyCode(el,code){
     setTimeout(()=>{el.textContent=orig;},1500);
   });
 }
-function switchUpTab(uid,panel,el,th){
-  // update tab styles
-  el.parentNode.querySelectorAll('.up-tab').forEach(t=>{
-    t.style.background=th.card;t.style.color=th.muted;t.style.borderColor=th.border;
-    t.classList.remove('active');
+function switchUpTab(el){
+  const uid=el.dataset.uid;
+  const panel=el.dataset.panel;
+  const tabs=el.closest('.up-tabs');
+  // toggle tab appearance via class
+  tabs.querySelectorAll('.up-tab').forEach(t=>{
+    const on=t.dataset.panel===panel;
+    t.classList.toggle('active',on);
+    // re-apply inline styles based on active state
+    if(on){t.style.opacity='1';t.style.fontWeight='700';}
+    else{t.style.opacity='0.55';t.style.fontWeight='600';}
   });
-  el.style.background=th.text;el.style.color='#fff';el.style.borderColor=th.text;
-  el.classList.add('active');
-  // switch panels
-  document.getElementById(uid+'-up').classList.toggle('active',panel==='up');
-  document.getElementById(uid+'-dc').classList.toggle('active',panel==='dc');
+  // show correct panel
+  const up=document.getElementById(uid+'-up');
+  const dc=document.getElementById(uid+'-dc');
+  if(up)up.classList.toggle('active',panel==='up');
+  if(dc)dc.classList.toggle('active',panel==='dc');
 }
 
 /* ══ INIT ══ */

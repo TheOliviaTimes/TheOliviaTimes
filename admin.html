@@ -949,7 +949,6 @@ function initEditorEvents(){
     else if(cl.includes('ui-desc')) item.desc=inp.value;
     else if(cl.includes('ui-code')) item.code=inp.value;
     else if(cl.includes('ui-url'))  item.url=inp.value;
-    else if(cl.includes('ui-itype')){item.itemType=inp.value;rebuildBkList();}
     else if(cl.includes('pi-emoji')){item.emoji=inp.value;uBH(inp,inp.value,item.name);}
     else if(cl.includes('pi-name')){item.name=inp.value;uBH(inp,item.emoji,inp.value);}
     else if(cl.includes('pi-desc')) item.desc=inp.value;
@@ -978,30 +977,38 @@ function initEditorEvents(){
     dRender();setDirty(true);
   });
 
-  /* ── select changes (product layout, product status) ── */
+  /* ── select changes ── */
   container.addEventListener('change',e=>{
     const sel=e.target;
+    const bid=parseInt(sel.dataset.bid),ii=parseInt(sel.dataset.ii);
+    const b=S.blocks.find(b=>b.id===bid);
+
     if(sel.classList.contains('bk-layout')){
-      const b=S.blocks.find(b=>b.id===parseInt(sel.dataset.bid));
       if(b){b.layout=sel.value;render();setDirty(true);}
+      return;
     }
     if(sel.classList.contains('pi-status')){
-      const bid=parseInt(sel.dataset.bid),ii=parseInt(sel.dataset.ii);
-      const b=S.blocks.find(b=>b.id===bid);
       if(b&&b.items[ii])b.items[ii].status=sel.value;
       dRender();setDirty(true);
+      return;
     }
     if(sel.classList.contains('pi-feat')){
-      const bid=parseInt(sel.dataset.bid),ii=parseInt(sel.dataset.ii);
-      const b=S.blocks.find(b=>b.id===bid);
       if(b&&b.items[ii])b.items[ii].featured=sel.checked;
       render();setDirty(true);
+      return;
+    }
+    if(sel.classList.contains('ui-itype')){
+      if(b&&b.items[ii]){
+        b.items[ii].itemType=sel.value;
+        rebuildBkList();render();setDirty(true);
+      }
+      return;
     }
   });
 
   /* ── checkbox (pi-feat) ── */
   container.addEventListener('change',e=>{
-    if(e.target.classList.contains('pi-feat')){
+    if(e.target.type==='checkbox'&&e.target.classList.contains('pi-feat')){
       const bid=parseInt(e.target.dataset.bid),ii=parseInt(e.target.dataset.ii);
       const b=S.blocks.find(b=>b.id===bid);
       if(b&&b.items[ii])b.items[ii].featured=e.target.checked;
