@@ -336,6 +336,7 @@ function doLogin(){
   if(pw===ADMIN_PASSWORD){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('appShell').style.display='flex';
+    initEditorEvents(); // bind once after app shell is visible
     loadFromSupabase();
   } else {
     document.getElementById('loginErr').textContent='密碼錯誤，請再試一次';
@@ -1267,9 +1268,7 @@ function pvBottom(b,th){
   return`<div class="pv-bot-links">${links}</div>`;
 }
 
-// ── INIT: bind events once, then load data ──
-initEditorEvents();
-loadFromSupabase().catch(()=>{rebuildBkList();render();setDirty(false);});
+// (events initialized in doLogin, data loaded in loadFromSupabase)
 </script>
 </body>
 </html>
